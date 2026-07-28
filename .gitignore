@@ -1,0 +1,5 @@
+# Source materials: ignore raw document binaries (keep README and .gitkeep)
+source_materials/**/*.pdf
+source_materials/**/*.xlsx
+source_materials/**/*.pptx
+source_materials/**/*.docx
