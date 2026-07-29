@@ -23,11 +23,11 @@
 
 ```
 User (1) ──< (N) Mistake
-Question (1) ──< (N) Mistake   # question_id 可选；无主题库时 Mistake 自持题目快照
+Question (1) ──< (N) Mistake   # MVP：Mistake.question_id 必填，关联 Question
 ```
 
 - **Mistake** 关注「这次做错 + 怎么复习」
-- **Question**（见 `question_schema.md`，待定义）关注「题目本身」的共享与去重
+- **Question**（见 `question_schema.md`）存储题目正文；MVP 保存错题前须先创建/匹配 `Question`
 - 入库时：`question_analysis` 工作流的 `Data Handoff` 映射为本 Schema 字段；`review_status` 从工作流入库状态映射为 `new`（见 §4）
 
 ### 设计原则
@@ -49,7 +49,7 @@ Question (1) ──< (N) Mistake   # question_id 可选；无主题库时 Mistak
 |----------|----------|----------|------|
 | `mistake_id` | UUID / BIGINT | **是** | 错题记录主键，全局唯一 |
 | `user_id` | UUID / BIGINT | **是** | 所属用户 ID，外键关联 User |
-| `question_id` | UUID / BIGINT | 否 | 关联共享题库中的题目 ID；无主题库或尚未归一化时为 `null`，此时依赖本记录内的题目快照 |
+| `question_id` | UUID / BIGINT | **是**（MVP） | 外键关联 `Question.question_id`；保存错题前须先创建/匹配 Question |
 
 ### 2.2 题目来源与快照
 
