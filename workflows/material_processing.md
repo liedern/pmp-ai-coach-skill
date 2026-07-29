@@ -1,367 +1,318 @@
 # Material Processing Workflow
 
-> 资料加工工作流：将 `source_materials/` 中的原始 PMP 学习资料转化为 `knowledge/` 可引用的结构化知识。
+> 可维护的 PMP 学习资料处理流水线：将 `source_materials/` 及用户上传的原始资料，转化为 Agent 可理解、可检索的结构化知识。
 >
-> 本文件定义**完整加工流水线**、PMP 专项提取规则与**固定输出格式**。不替代 `skill.md` 中的教练角色定义。
+> **硬性规则**：`source_materials/` 原文不得被 Agent 直接引用；须经本流程写入 `knowledge/` 后方可调用。
 
 ---
 
 ## 1. Purpose
 
-| 目标 | 说明 |
-|------|------|
-| **统一资料入口** | 多格式原始资料经同一流水线处理 |
-| **结构化知识产出** | 输出标准 Markdown + `MATERIAL_HANDOFF` JSON |
-| **PMP 考试适配** | 强制双语术语、考试关键词、问法信号、易混概念、场景案例 |
-| **可审计** | 来源可追溯；低置信标 **Need Review**；不编造 |
+该流程负责将**原始资料**转换为 **Agent 可理解的结构化知识**。
 
-**硬性规则**：`source_materials/` 中的文件**不得**被 Agent 直接引用；必须经过本工作流写入 `knowledge/` 后方可调用。
+加工目标不是「存档 PDF」，而是产出可供 `question_analysis`、决策引擎、学习计划等工作流调用的**判断型知识**——含定义、关键词、考试规则、示例与易错点。
 
----
+### 输入
 
-## 2. Supported Input Types
+| 类型 | 典型形式 | 建议存放 |
+|------|----------|----------|
+| **PDF 教材** | PMBOK、辅导书、考纲 PDF | `source_materials/textbook/`、`source_materials/exam/` |
+| **PPT 课程** | 培训讲义、冲刺幻灯片 | `source_materials/course/` |
+| **视频笔记** | 字幕、文字稿、听课笔记 | `source_materials/course/` |
+| **题库** | 套卷 PDF/Excel/Word、带解析题库 | `source_materials/question_bank/` |
+| **用户上传资料** | 聊天附件、截图、个人笔记 | 登记 `source_path` + `user_id`（若适用） |
 
-| 输入类型 | 扩展名 / 形式 | 预处理 | 原始存放路径（建议） |
-|----------|---------------|--------|----------------------|
-| **PDF** | `.pdf` | 文本层提取；扫描件 → OCR | `source_materials/{分类}/` |
-| **Word** | `.docx`, `.doc` | 解析标题、表格、列表 | 同上 |
-| **PPT** | `.pptx`, `.ppt` | 按幻灯片提取文本与备注；图表 → OCR | 同上 |
-| **Excel** | `.xlsx`, `.xls`, `.csv` | 表头识别；行记录化 | 同上 |
-| **网页** | URL / HTML / 剪藏 Markdown | 去导航/广告；保留正文与标题层级 | 用户提供 URL 或导出 HTML |
-| **截图** | `.png`, `.jpg`, `.webp` | OCR → `ocr_text` + `confidence` | 同上 |
+另支持：Word、Excel、网页剪藏、截图（见 §3 Step 1）。
 
-### 2.1 输入元数据
+### 输出
 
-| 字段 | 说明 |
-|------|------|
-| `processing_id` | UUID，本次加工任务 ID |
-| `input_type` | `pdf` \| `word` \| `ppt` \| `excel` \| `web` \| `image` |
-| `source_path` | `source_materials/` 内相对路径或 `file_ref` |
-| `source_label` | 来源说明（机构、教材、课程名） |
-| `language` | `en` \| `zh` \| `bilingual` |
-| `submitted_at` | ISO 8601 |
+每条加工结果应落入以下五类产出（可组合）：
 
-### 2.2 降级与拒绝
+| 产出类型 | 说明 | 典型落点 |
+|----------|------|----------|
+| **知识点** | 概念、过程、定义、ITTO 要点 | `knowledge/pmbok/`、`knowledge/agile/` |
+| **关键词** | 题干信号词、英文术语、问法词 | `knowledge/language/`、`knowledge/exam/` |
+| **考试规则** | 决策顺序、口诀、优先级原则 | `knowledge/decision_framework/`、`knowledge/exam/` |
+| **示例** | 场景案例、例题片段、对比表 | 嵌入知识点条目或 `examples/` |
+| **易错点** | 易混概念、干扰项套路、陷阱模式 | `knowledge/language/confusing_terms.md`、`knowledge/exam/trap_patterns.md` |
 
-| 情形 | 处理 |
-|------|------|
-| 加密/损坏文件 | Need Review，提示重新导出 |
-| OCR 低置信 | 仅保留原文片段，不推断缺失字段 |
-| 网页无法抓取 | 请用户粘贴正文或导出 PDF |
-| 超大文件 | 按章/按页/按 Sheet 拆分为 Processing Unit |
+机器可读交接：`MATERIAL_HANDOFF` JSON + 加工报告（见 §4、§5）。
 
 ---
 
-## 3. Processing Pipeline（完整流程）
+## 2. Source Classification
 
-**按顺序执行，不可跳步。**
+在提取内容前，先判定**来源类型**（`source_class`）与**内容类型**（`content_type`）。二者可组合。
+
+### 2.1 来源分类（Source Class）
+
+| 类别 | 标识 | 典型示例 | 信任度 | 默认落点 |
+|------|------|----------|--------|----------|
+| **A. Official Source** | `official` | PMBOK、ECO、PMI 官方说明 | 高 | `knowledge/pmbok/`、`knowledge/exam/` |
+| **B. Training Material** | `training` | 培训讲义、视频笔记、讲师口诀 | 中 | `knowledge/decision_framework/`、`knowledge/course/`（若扩展） |
+| **C. Question Bank** | `question_bank` | 模拟题、真题合集、带解析题库 | 中（答案以原文为准） | `examples/questions/` |
+| **D. User Data** | `user_data` | 个人错题、用户笔记、截图错题 | 视用户输入 | `memory/`、`database/`（经 `question_analysis`） |
+
+### 2.2 内容类型（Content Type）
+
+| content_type | 识别信号 | 与 source_class 常见组合 |
+|--------------|----------|--------------------------|
+| `knowledge` | 概念、过程、章节、ITTO | A + B |
+| `terminology` | 英中词汇、缩写表 | A + B |
+| `exam_rule` | 考纲权重、题型说明、答题策略 | A |
+| `question` | 题干 + 选项（≥2） | C、D |
+| `mixed` | 同一文件含多类 | 拆分为多个 Processing Unit |
+
+### 2.3 分类决策树
 
 ```
-Source Material（source_materials/）
-        │
-        ▼
-① 内容识别（Content Recognition）
-        │
-        ▼
-② 资料分类（Material Classification）
-        │
-        ▼
-③ 知识提取（Knowledge Extraction）
-        │
-        ▼
-④ 中英文关键词映射（Bilingual Keyword Mapping）
-        │
-        ▼
-⑤ 生成结构化 Markdown（Structured Markdown Generation）
-        │
-        ▼
-⑥ 质量校验（Quality Validation）
-        │
-        ▼
-⑦ 写入 knowledge（Knowledge Storage）
+用户上传 / source_materials/
+    │
+    ├─ 含题干+选项？ ──是──→ C 或 D（有 user_answer → D）
+    │
+    ├─ 含 ECO / PMBOK 官方标识？ ──→ A
+    │
+    ├─ 含讲师/课程/口诀？ ──→ B
+    │
+    └─ 英中词汇表？ ──→ terminology → knowledge/language/
 ```
+
+### 2.4 与 `source_materials/` 目录映射
+
+| 目录 | 推荐 source_class |
+|------|-------------------|
+| `exam/` | A |
+| `textbook/` | A |
+| `course/` | B |
+| `terminology/` | A / B |
+| `question_bank/` | C |
 
 ---
 
-### Step ① 内容识别（Content Recognition）
+## 3. Processing Pipeline
+
+**按顺序执行，不可跳步。** 任一步失败则挂起或输出 Need Review，不静默入库。
+
+```
+Raw Material（原始资料）
+        │
+        ▼
+Extract Text（提取文本）
+        │
+        ▼
+Clean Content（清洗内容）
+        │
+        ▼
+Classify Topic（分类主题 / 来源）
+        │
+        ▼
+Map Knowledge Point（映射知识点）
+        │
+        ▼
+Generate Structured Knowledge（生成结构化知识）
+        │
+        ▼
+Store（写入 knowledge / examples / memory）
+```
+
+### Step 1 — Raw Material（原始资料）
 
 | 动作 | 说明 |
 |------|------|
-| 格式解析 | 按 `input_type` 提取纯文本与结构（标题、表格、列表、页码） |
-| OCR（截图/扫描件） | 输出 `ocr_text`、`ocr_confidence` |
-| 网页清洗 | 保留正文、标题、表格；记录 `source_url` |
-| PPT 处理 | 幻灯片标题 + 要点 + 演讲者备注分别标记 |
-| 切块 | 大文档 → `Processing Unit`（按章/节/卷） |
-| 输出 | `raw_units[]`：每块含 `text`、`page_range`、`structure_hints` |
+| 接收 | 文件或文本 + `source_path` + `source_label` |
+| 登记 | 分配 `processing_id`（UUID） |
+| 保留原件 | **不修改、不删除** `source_materials/` 内文件 |
 
----
+### Step 2 — Extract Text（提取文本）
 
-### Step ② 资料分类（Material Classification）
+| 输入类型 | 提取方式 |
+|----------|----------|
+| PDF | 文本层；扫描件 → OCR（记录 `ocr_confidence`） |
+| PPT | 幻灯片标题 + 要点 + 演讲者备注 |
+| 视频笔记 | 去时间戳，按段落/章节切分 |
+| 题库 | 按题号/行切分；保留选项结构 |
+| 截图 | OCR → `ocr_text` |
 
-为每个 `Processing Unit` 判定 `primary_type`（可多标签，一主多副）：
+输出：`raw_units[]`（`text`、`page_range`、`structure_hints`）。
 
-| primary_type | 识别信号 | 写入路径 |
-|--------------|----------|----------|
-| `exam_material` | ECO、考试大纲、题型说明、领域权重 | `knowledge/exam/` |
-| `pmbok_knowledge` | PMBOK 过程、知识领域、ITTO | `knowledge/pmbok/`、`knowledge/agile/` |
-| `course_notes` | 口诀、决策套路、讲师总结 | `knowledge/decision_framework/` |
-| `terminology` | 英中词汇表、缩写、对照表 | `knowledge/language/` |
-| `question_bank` | 题干 + 选项、套卷、解析 | `examples/questions/` |
-
-**分类规则**：
-
-```
-题干+选项 ≥2 → question_bank
-ECO / Exam Outline → exam_material
-glossary / 英中对照 → terminology
-「第一步」「口诀」「讲师」→ course_notes
-PMBOK 过程名 / 章节标题 → pmbok_knowledge
-混合文档 → 拆分为多个 Unit，分别分类
-```
-
----
-
-### Step ③ 知识提取（Knowledge Extraction）
-
-按 `primary_type` 提取字段（详见 §5）。所有字段标注：
-
-| 标记 | 含义 |
-|------|------|
-| **【事实】** | 原文明确存在 |
-| **【推测】** | Agent 推断，须标 `confidence` |
-| **Need Review** | 无法确认，值置 `null` |
-
----
-
-### Step ④ 中英文关键词映射（Bilingual Keyword Mapping）
-
-对每条提取项**强制**执行映射（PMP 专项，见 §4）：
-
-1. 识别英文术语 → 查 `knowledge/language/synonym_mapping.md` 归一化
-2. 补全中文名称与考试含义
-3. 挂载题干 **Keywords**
-4. 挂载 **First / Next / Best** 问法信号词（若原文或上下文涉及）
-5. 挂载 **易混概念** `confusing_terms`
-6. 生成或摘录 **场景案例** `scenario_example`
-
-无法映射的标准英文 → Need Review，不写入术语主表。
-
----
-
-### Step ⑤ 生成结构化 Markdown（Structured Markdown Generation）
-
-按 §6 **固定输出格式** 生成：
-
-- 人类可读 Markdown 正文
-- `MATERIAL_HANDOFF` JSON 块（机器可读）
-
----
-
-### Step ⑥ 质量校验（Quality Validation）
-
-| 检查项 | 规则 |
-|--------|------|
-| 防编造 | 无原文依据的字段不得为【事实】 |
-| 双语完整 | 核心术语含 English + 中文 + exam_meaning |
-| 路径正确 | `target_path` 与 `primary_type` 一致 |
-| 去重 | 同 `concept_id` / `question_id` 合并或版本追加 |
-| Need Review | 未解决项不写入 `knowledge/` 主内容 |
-
----
-
-### Step ⑦ 写入 knowledge（Knowledge Storage）
+### Step 3 — Clean Content（清洗内容）
 
 | 动作 | 说明 |
 |------|------|
-| 写入 | 追加或合并至目标 `.md` 文件 |
-| 索引 | 在 `knowledge/source/imported_materials.md` 登记 |
-| 保留原件 | **不删除** `source_materials/` 原文件 |
-| 报告 | 输出 §6.3 加工报告 |
+| 去噪 | 页眉页脚、页码、重复水印、广告 |
+| 规范化 | UTF-8；统一换行；保留标题层级 |
+| 标注 | 【事实】原文摘录 vs 待加工片段 |
+| 拒绝 | 加密/损坏/整页 OCR 不可读 → Need Review |
 
----
+**禁止**：将清洗结果当作最终知识入库（仍为中间态）。
 
-## 4. PMP 专项加工要求
+### Step 4 — Classify Topic（分类主题）
 
-加工每条知识时，**必须尝试填充**以下五类 PMP 增强字段（原文无则标 Need Review 或【推测】，禁止编造）：
+应用 §2：输出 `source_class`、`content_type`、`primary_topic`（如 scope / risk / agile / terminology）。
 
-### 4.1 中英文术语解析（Bilingual Term Parsing）
+大文件按章/套卷拆为多个 `Processing Unit`，分别分类。
 
-每条核心概念：
+### Step 5 — Map Knowledge Point（映射知识点）
 
-```markdown
-**English Term（中文名称）**
-- 中文解释：
-- PMP考试含义：
-- 英文原词保留：是
-```
-
-对齐输出：`knowledge/language/pmp_terms.md` 条目结构。
-
-### 4.2 高频考试关键词（Exam Keywords）
-
-从原文或上下文提取题干信号词，写入 `keywords[]`：
-
-| 类别 | 示例 |
+| 动作 | 说明 |
 |------|------|
-| 过程词 | change request, risk register, baseline, CCB |
-| 场景词 | conflict, resistance, scope creep, variance |
-| 角色词 | Product Owner, Scrum Master, sponsor |
+| 对齐考纲 | ECO Domain：People / Process / Business Environment |
+| 对齐 PMBOK | 知识领域、过程名（如 Validate Scope） |
+| 对齐已有库 | 查 `knowledge/terminology/pmp_glossary.md`、`knowledge/language/synonym_mapping.md` |
+| 去重指纹 | `concept_id` = 过程名 + 知识域名；`question_id` = 题干 hash |
+| 标记关系 | `related_concepts[]`、`confusing_terms[]` |
 
-参考：`knowledge/language/keyword_mapping.md`、`knowledge/exam/exam_keywords_mapping.md`。
+无法映射 → `knowledge_point: null` + Need Review，**不编造**标准过程名。
 
-### 4.3 First / Next / Best 题型关键词（Question Intent Keywords）
+### Step 6 — Generate Structured Knowledge（生成结构化知识）
 
-若资料涉及答题方法、讲师口诀或例题解析，提取问法信号：
+按 §4（知识点）或 §5（题库）模板生成 Markdown + JSON 字段。
 
-| 问法 | 英文信号 | 考试含义 | 优先动作倾向 |
-|------|----------|----------|--------------|
-| First | first, initially | 找第一步 | analyze, document, meet |
-| Next | next, then, following | 流程下一步 | 状态机 +1 |
-| Best | best, most effective | 多选择优 | priority_rules |
-| Most Appropriate | most appropriate | 情境最贴合 | 排除过度/不足 |
-| Should | should, recommended | PMI 推荐行为 | 流程 + 协作 |
+必须区分：
 
-写入字段：`question_intent_keywords[]`。
+- **【事实】**：原文明确存在
+- **【推测】**：Agent 补充的考试语境（标 `confidence`）
+- **Need Review**：无法确认
 
-### 4.4 易混概念（Confusing Terms）
+### Step 7 — Store（存储）
 
-每条知识至少检查是否与已知易混项关联：
+| source_class | 目标路径 |
+|--------------|----------|
+| A 官方 / 教材 | `knowledge/pmbok/`、`knowledge/exam/`、`knowledge/agile/` |
+| B 培训 | `knowledge/decision_framework/` |
+| 术语 | `knowledge/language/`、`knowledge/terminology/` |
+| C 题库 | `examples/questions/` |
+| D 用户错题 | `memory/mistake_memory` 或 `database/`（经分析工作流） |
 
-```yaml
-confusing_terms:
-  - term: Issue Log
-    distinction: 已发生问题；Risk Register 为未来风险
-```
+索引：追加 `knowledge/source/imported_materials.md`（或 `knowledge/terminology/import_log.md`）。
 
-参考：`knowledge/language/confusing_terms.md`。
-
-### 4.5 场景案例（Scenario Examples）
-
-摘录或改写原文中的情境/例题（不改写为考题答案，除非原文含解析）：
-
-```yaml
-scenario_example:
-  context: 两名团队成员因工作分配发生冲突
-  signal_words: [conflict, team, work allocation]
-  exam_focus: First 题 — 合作解决优先于升级
-  source_page: 42
-```
+输出：§4 加工报告 + `MATERIAL_HANDOFF` JSON。
 
 ---
 
-## 5. Extraction Rules by Type
+## 4. Knowledge Extraction Format
 
-### 5.1 知识点（pmbok / exam / course）
+每个知识点**必须**输出以下字段。缺失时置 `null` 并说明原因，**不得虚构**。
 
-| 字段 | 键名 | 必须 |
-|------|------|------|
-| 概念 | `concept` | 是 |
-| 定义 | `definition` | 是 |
-| 过程 | `process` | 否 |
-| 知识领域 | `knowledge_domain` | 推荐 |
-| 关键词 | `keywords[]` | 推荐 |
-| 问法关键词 | `question_intent_keywords[]` | 推荐 |
-| 易混概念 | `confusing_terms[]` | 推荐 |
-| 场景案例 | `scenario_example` | 推荐 |
-| 考试陷阱 | `exam_trap` | 推荐 |
-| 来源页码 | `source_page` | 否 |
+| 字段 | 英文键 | 必须 | 说明 |
+|------|--------|------|------|
+| **Knowledge Name** | `knowledge_name` | 是 | 中文知识点名 |
+| **English Term** | `english_term` | 推荐 | 英文原词/过程名；核心概念不可省略 |
+| **Definition** | `definition` | 是 | 定义；【事实】摘自原文或【推测】标注 |
+| **Related Process** | `related_process` | 推荐 | PMBOK 过程或敏捷实践 |
+| **Exam Keywords** | `exam_keywords[]` | 推荐 | 题干信号词、缩写 |
+| **Scenario** | `scenario` | 推荐 | 典型考题情境 |
+| **Common Trap** | `common_trap` | 推荐 | 易错点、干扰项套路 |
+| **Memory Method** | `memory_method` | 否 | 口诀、对比、一句话规则 |
 
-### 5.2 术语（terminology）
-
-| 字段 | 键名 | 必须 |
-|------|------|------|
-| 英文术语 | `english_term` | 是 |
-| 中文名称 | `chinese_term` | 是 |
-| 考试含义 | `exam_meaning` | 是 |
-| 关键词 | `keywords[]` | 推荐 |
-| 场景 | `scenario` | 推荐 |
-| 易混概念 | `confusing_terms[]` | 推荐 |
-| 示例 | `example` | 推荐 |
-
-### 5.3 题目（question_bank）
-
-| 字段 | 键名 | 必须 |
-|------|------|------|
-| 题干 | `question` | 是 |
-| 选项 | `options` | 是 |
-| 正确答案 | `correct_answer` | 原文有则必填；无则 null |
-| 知识点 | `knowledge_points[]` | 推荐 |
-| 推理 | `reasoning` | 推荐 |
-| 问法 | `question_intent` | 推荐 |
-| 陷阱模式 | `trap_patterns[]` | 推荐 |
-
-### 5.4 课程口诀（course_notes）
-
-| 字段 | 键名 | 必须 |
-|------|------|------|
-| 规则原话 | `rule_statement` | 是 |
-| 优先级顺序 | `priority_order[]` | 推荐 |
-| 适用类型 | `applies_to` | 推荐 |
-| 反例 | `counterexample` | 否 |
-
----
-
-## 6. Output Format（明确输出格式）
-
-### 6.1 单条知识 — Markdown 模板
+### 4.1 Markdown 模板
 
 ```markdown
 ---
 id: {concept_id}
-type: {primary_type}
+source_class: official | training
 source: {source_label}
-source_path: source_materials/{path}
-source_page: {page}
+source_path: source_materials/...
+pmbok_version: {见 §6}
+exam_version: {见 §6}
 confidence: high | medium | low
-target_path: knowledge/{...}
-imported_at: {ISO8601}
+target_path: knowledge/pmbok/scope.md
 ---
 
-## {English Term}（{中文名称}）
+## {Knowledge Name}（{English Term}）
 
 ### Definition
 【事实|推测】{definition}
 
-### Process
-{process}
+### Related Process
+{related_process}
 
-### PMP Exam Context
-{exam_meaning / 考试怎么考}
-
-### Keywords
+### Exam Keywords
 - {keyword_1}
 - {keyword_2}
 
-### Question Intent Keywords
-| 问法 | 信号词 | 判断要点 |
-|------|--------|----------|
-| First | … | … |
+### Scenario
+> {scenario}
 
-### Confusing Terms
-| 易混概念 | 区分要点 |
-|----------|----------|
-| {term} | {distinction} |
+### Common Trap
+{common_trap}
 
-### Scenario Example
-> 【事实】{scenario_example}
-
-### Exam Trap
-{exam_trap}
+### Memory Method
+> {memory_method}
 
 ### Source
-- 原始文件：`source_materials/...`
-- 页码：{page}
+- 页码/段落：{source_page}
 ```
 
-### 6.2 单条术语 — 表格行（批量词汇表）
+### 4.2 产出类型映射
 
-```markdown
-| English Term | 中文名称 | PMP考试含义 | Keywords | 易混概念 | Example |
-|--------------|----------|-------------|----------|----------|---------|
-| Validate Scope | 确认范围 | 客户正式验收可交付成果 | Customer Acceptance, Deliverable | Control Quality | … |
+| 加工侧重 | 额外写入 |
+|----------|----------|
+| 关键词为主 | `exam_keywords` → 同步 `knowledge/language/keyword_mapping.md` |
+| 考试规则为主 | `memory_method` + 决策顺序 → `knowledge/decision_framework/` |
+| 易错点为主 | `common_trap` → `knowledge/language/confusing_terms.md` |
+| 示例为主 | `scenario` → 嵌入条目或 `examples/` |
+
+### 4.3 MATERIAL_HANDOFF（单条知识点 JSON）
+
+```json
+{
+  "item_type": "knowledge_point",
+  "knowledge_name": "确认范围",
+  "english_term": "Validate Scope",
+  "definition": "【事实】…",
+  "related_process": "Validate Scope",
+  "exam_keywords": ["Customer Acceptance", "Deliverable"],
+  "scenario": "客户正式验收可交付成果",
+  "common_trap": "与 Control Quality 混淆",
+  "memory_method": "客户点头验收范围，检查合格是质量",
+  "source_class": "official",
+  "concept_id": "scope_validate_scope",
+  "need_review": false
+}
 ```
 
-### 6.3 单条题目 — Markdown 模板
+---
+
+## 5. Question Bank Processing
+
+`source_class = question_bank` 或用户错题（`user_data`）走本题库分支。
+
+### 5.1 必提取字段
+
+| 字段 | 英文键 | 必须 | 说明 |
+|------|--------|------|------|
+| **Question** | `question` | 是 | 题干原文 |
+| **Options** | `options` | 是 | `{"A":"...","B":"..."}` |
+| **Answer** | `correct_answer` | 否 | 原文有则【事实】；无则 `null` + Need Review |
+| **Explanation** | `explanation` | 否 | 官方/讲义解析原文 |
+| **Knowledge Point** | `knowledge_points[]` | 推荐 | 关联概念/过程 |
+| **Difficulty** | `difficulty` | 否 | `easy` / `medium` / `hard` |
+| **Trap Type** | `trap_type` | 推荐 | 对齐 `trap_patterns.md`（如 T02 过早升级） |
+
+用户错题（D 类）额外字段：`user_answer`、`mistake_type` → 交 `question_analysis` 工作流。
+
+### 5.2 处理流程
+
+```
+题库 Raw Material
+    │
+    ▼
+按题切分 → Extract Question / Options
+    │
+    ▼
+有解析？ → 提取 Answer / Explanation【事实】
+无答案？ → correct_answer = null，Need Review
+    │
+    ▼
+Map Knowledge Point + Trap Type【推测】须标注
+    │
+    ▼
+Store → examples/questions/{source}_{set}.md
+可选 → 触发 question_analysis 生成讲解
+```
+
+### 5.3 题库 Markdown 模板
 
 ```markdown
 ---
@@ -369,7 +320,7 @@ id: {question_id}
 type: question_bank
 source: {source_label}
 exam_set: {set_name}
-confidence: high | medium | low
+difficulty: medium
 ---
 
 ## Question
@@ -377,77 +328,98 @@ confidence: high | medium | low
 
 ## Options
 - A. …
-- B. …
-- C. …
-- D. …
 
-## Correct Answer
-【事实】{answer} | Need Review
+## Answer
+【事实】B
+
+## Explanation
+【事实】…
 
 ## Knowledge Points
-- …
+- Validate Scope
 
-## Question Intent
-First | Next | Best | …
-
-## Reasoning
-【事实|推测】…
-
-## Trap Patterns
-- T02 过早升级
+## Trap Type
+- Concept Confusion: Validate Scope vs Control Quality
 ```
 
-### 6.4 MATERIAL_HANDOFF JSON（机器交接块）
+---
 
-每条加工任务末尾**必须**附加：
+## 6. Version Management
 
-````markdown
-<!-- MATERIAL_HANDOFF:BEGIN -->
-```json
-{
-  "processing_id": "uuid",
-  "source_path": "source_materials/textbook/PMBOK_ch7.pdf",
-  "source_label": "PMBOK 第7章",
-  "input_type": "pdf",
-  "primary_type": "pmbok_knowledge",
-  "units_processed": 3,
-  "items": [
-    {
-      "item_id": "uuid",
-      "item_type": "knowledge_point",
-      "concept": "Validate Scope（确认范围）",
-      "english_term": "Validate Scope",
-      "chinese_term": "确认范围",
-      "definition": "【事实】…",
-      "process": "Validate Scope",
-      "knowledge_domain": "scope",
-      "keywords": ["Customer Acceptance", "Deliverable"],
-      "question_intent_keywords": [
-        { "intent": "first", "signals": ["first", "initially"], "hint": "验收前确认交付" }
-      ],
-      "confusing_terms": [
-        { "term": "Control Quality", "distinction": "查质量是否符合标准，非正式验收范围" }
-      ],
-      "scenario_example": {
-        "context": "…",
-        "signal_words": [],
-        "exam_focus": "…"
-      },
-      "exam_trap": "勿与 Control Quality 混淆",
-      "confidence": "high",
-      "target_path": "knowledge/pmbok/scope.md",
-      "need_review": false
-    }
-  ],
-  "stored_paths": ["knowledge/pmbok/scope.md"],
-  "need_review_items": [],
-  "processed_at": "2026-07-28T14:00:00+08:00"
-}
-```
-<!-- MATERIAL_HANDOFF:END -->
-````
+每条入库记录**必须**携带版本元数据，支持考纲更新与多版本共存。
 
-### 6.5 加工报告（固定输出）
+| 字段 | 英文键 | 必须 | 说明 |
+|------|--------|------|------|
+| **PMBOK 版本** | `pmbok_version` | 推荐 | 如 `6`、`7`、`unknown` |
+| **更新时间** | `updated_at` | 是 | 本次加工时间 ISO 8601 |
+| **来源** | `source_label` | 是 | 机构、教材名、文件名 |
+| **适用考试版本** | `exam_version` | 推荐 | 如 `ECO_2021`、`ECO_2025` |
+| **来源路径** | `source_path` | 是 | `source_materials/...` |
+| **加工版本** | `processor_version` | 否 | 本 workflow 文档版本 |
+| **内容哈希** | `content_hash` | 否 | 去重与增量更新 |
+| **取代关系** | `supersedes_id` | 否 | 新版资料替代旧版条目 |
+
+### 6.1 版本规则
+
+| 规则 | 说明 |
+|------|------|
+| 同 `concept_id` 重复 | **合并**或**版本追加**，不重复创建矛盾条目 |
+| 新旧冲突 | 保留两者并标注 `exam_version`；默认 Agent 用较新考纲 |
+| 来源不明 | `exam_version: unknown`，建议 Need Review |
+| 索引 | `imported_materials.md` 记录每次导入的版本元数据 |
+
+---
+
+## 7. Quality Rules
+
+### 7.1 不要（禁止）
+
+| 禁止项 | 说明 |
+|--------|------|
+| **直接复制 PDF** | 不得把 PDF 全文原样粘贴进 `knowledge/` |
+| **编造** | 无原文依据的题目、答案、定义、考纲权重 |
+| **冒充官方** | 培训资料不得标为 Official Source |
+| **静默入库** | Need Review 项不得写入正式知识条 |
+| **破坏原件** | 不得修改 `source_materials/` |
+
+### 7.2 必须（硬性）
+
+| 必须项 | 说明 |
+|--------|------|
+| **结构化** | 每条知识符合 §4 或 §5 字段契约 |
+| **双语核心术语** | English Term + 中文 Knowledge Name |
+| **事实/推测分离** | 【事实】/【推测】/ Need Review |
+| **可追溯** | `source_path` + 页码/段落 |
+| **加工报告** | 每次任务输出 Report + MATERIAL_HANDOFF |
+
+### 7.3 避免（去重与精简）
+
+| 避免项 | 做法 |
+|--------|------|
+| **重复知识** | `concept_id` / `question_id` 去重；已有条目用合并策略（§6） |
+| **同义堆砌** | 用 `synonym_mapping.md` 归一，不重复建条 |
+| **冗长摘录** | 只保留判断所需定义与场景，非整页复制 |
+
+### 7.4 保留（核心价值）
+
+| 保留项 | 说明 |
+|--------|------|
+| **考试判断逻辑** | 决策顺序、First/Next/Best、优先级原则、陷阱模式 |
+| **易混对比** | Common Trap、confusing_terms |
+| **可迁移规则** | Memory Method、口诀、标准处理链 |
+
+### 7.5 质量检查清单
+
+- [ ] 未完成结构化 → 不入库
+- [ ] OCR 低置信且无人工确认 → 仅报告，不入库
+- [ ] 题库无答案 → `correct_answer: null`，不猜测为【事实】
+- [ ] 已对齐 §6 版本字段
+- [ ] 已更新 `imported_materials` 索引
+- [ ] 原始文件未改动
+
+---
+
+## 8. 加工报告模板
 
 ```markdown
 # Material Processing Report
@@ -455,101 +427,46 @@ First | Next | Best | …
 | 字段 | 值 |
 |------|-----|
 | processing_id | |
-| source_path | source_materials/... |
-| input_type | pdf / word / ppt / excel / web / image |
-| primary_type | |
-| units_processed | |
+| source_path | |
+| source_class | A / B / C / D |
+| content_type | |
+| pmbok_version | |
+| exam_version | |
 | items_extracted | |
 | items_stored | |
+| duplicates_merged | |
 | need_review_count | |
-| stored_paths | [] |
-| warnings | [] |
+
+## 写入路径
+- knowledge/...
+- examples/...
 
 ## Need Review 清单
 （无则写「无」）
-
-## 写入摘要
-- `knowledge/...`：+N 条
 ```
 
 ---
 
-## 7. Human Review
+## 9. 与其他模块衔接
 
-### 7.1 触发条件
-
-- OCR/解析置信度低
-- 术语英文不确定
-- 题库无正确答案
-- 分类冲突
-- 与已有 `knowledge/` 内容矛盾
-
-### 7.2 规则
-
-```json
-{
-  "review_id": "uuid",
-  "field": "correct_answer",
-  "reason": "原文未提供",
-  "raw_snippet": "…",
-  "status": "pending"
-}
-```
-
-- **不得**用猜测填充为【事实】
-- Need Review 项**不写入** `knowledge/` 正文，仅出现在报告中
+| 模块 | 衔接 |
+|------|------|
+| `source_materials/README.md` | 原始资料入口 |
+| `inputs/document_input.md` | 文档类路由 |
+| `workflows/question_analysis.md` | 题库/错题讲解与入库 |
+| `architecture/data_flow.md` | 知识数据流 |
+| `knowledge/terminology/import_log.md` | 术语导入示例 |
 
 ---
 
-## 8. Storage Mapping（source → knowledge）
-
-| source_materials/ | primary_type | knowledge/ 目标 |
-|-------------------|--------------|-----------------|
-| `exam/` | exam_material | `knowledge/exam/` |
-| `textbook/` | pmbok_knowledge | `knowledge/pmbok/`、`knowledge/agile/` |
-| `course/` | course_notes | `knowledge/decision_framework/` |
-| `terminology/` | terminology | `knowledge/language/` |
-| `question_bank/` | question_bank | `examples/questions/` |
-
-索引登记：`knowledge/source/imported_materials.md`。
-
----
-
-## 9. Agent 检查清单
-
-- [ ] 输入来自 `source_materials/` 或用户上传（登记 `source_path`）
-- [ ] 完成 ①–⑦ 全流程
-- [ ] 每条知识含 PMP 五类增强（§4）：术语、考试关键词、问法词、易混概念、场景案例
-- [ ] 输出符合 §6 Markdown + MATERIAL_HANDOFF 格式
-- [ ] Need Review 项未静默入库
-- [ ] 原始文件未删除
-- [ ] 已输出加工报告
-
----
-
-## 10. 流水线总览
+## 10. Agent 执行顺序（速查）
 
 ```
-source_materials/
-        │
-        ▼
-① 内容识别 ── PDF/Word/PPT/Excel/网页/截图
-        │
-        ▼
-② 资料分类 ── exam | pmbok | course | terminology | question_bank
-        │
-        ▼
-③ 知识提取 ── concept | term | question | rule
-        │
-        ▼
-④ 中英文关键词映射 ── language/ 体系对齐
-        │
-        ▼
-⑤ 结构化 Markdown ── §6 模板
-        │
-        ▼
-⑥ 质量校验 ── 防编造 | 双语 | 去重
-        │
-        ▼
-⑦ 写入 knowledge/ + imported_materials 索引
+1. 登记 Raw Material + source_path
+2. Extract Text → Clean Content
+3. Classify Topic（§2 A/B/C/D）
+4. Map Knowledge Point（去重 + 对齐 glossary）
+5. Generate（§4 或 §5 格式）
+6. Quality Rules（§7）校验
+7. Store + Version（§6）+ Report
 ```

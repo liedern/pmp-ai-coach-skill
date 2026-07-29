@@ -83,8 +83,55 @@
 
 ---
 
+## 7. 挣值旧称映射（来源 PDF 第一章）
+
+| 标准术语 | 旧称 / 变体 | 中文 |
+|----------|-------------|------|
+| AC | ACWP, Actual Cost of Work Performed | 实际成本 |
+| EV | BCWP, Budgeted Cost of Work Performed | 挣值 |
+| PV | BCWS, Budgeted Cost of Work Scheduled | 计划价值（EVM） |
+
+---
+
+## 8. 缩写歧义消歧
+
+| 缩写 | 语境 A → 标准术语 | 语境 B → 标准术语 |
+|------|-------------------|-------------------|
+| PV | EVM: Planned Value | Finance: Present Value |
+| FF | Schedule: Free Float | Dependency: Finish-to-Finish |
+| RBS | Risk: Risk Breakdown Structure | Resource: Resource Breakdown Structure |
+| SM | Scrum Master | 非 Standard（避免与 Subject Matter 混淆） |
+
+---
+
+## 9. 冲突策略同义表述（PDF 第十七章）
+
+| 标准策略 | 同义词 |
+|----------|--------|
+| Collaborate/Problem Solve | collaborate, problem solving, win-win |
+| Compromise/Reconcile | compromise, reconcile |
+| Smooth/Accommodate | smooth, accommodate |
+| Force/Direct | force, direct, command |
+| Withdraw/Avoid | withdraw, avoid, retreat |
+
+---
+
+## 10. 合同类型缩写（PDF 第十四章）
+
+| 标准术语 | 缩写变体 |
+|----------|----------|
+| Firm Fixed Price | FFP |
+| Fixed Price Incentive Fee | FPIF |
+| Cost Plus Fixed Fee | CPFF |
+| Cost Plus Incentive Fee | CPIF |
+| Cost Plus Award Fee | CPAF |
+| Time and Materials | T&M, T and M |
+
+---
+
 ## Agent 使用规则
 
 1. OCR/用户输入先归一化为标准 English Term
 2. 同义词命中后跳转 `pmp_terms.md` 完整条目
 3. 歧义同义词（如 "quality control" 可能指 Control Quality 或口语 QC）→ 结合场景词 disambiguate
+4. 旧题库可能用 ACWP/BCWP/BCWS → 映射为 AC/EV/PV

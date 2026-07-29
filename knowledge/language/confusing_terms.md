@@ -133,8 +133,93 @@
 
 ---
 
+## 13. PV — Planned Value vs Present Value
+
+| 维度 | Planned Value（计划价值） | Present Value（现值） |
+|------|---------------------------|------------------------|
+| **语境** | 挣值管理 EVM | 财务分析、NPV |
+| **关键词** | EV, AC, SPI, earned value | NPV, discount, cash flow |
+| **口诀** | 与 EV/AC 同现 → PV=计划价值 | 与 NPV/折现同现 → 现值 |
+
+**来源**：【事实】`PMP中英文词组翻译.pdf` 第三十四章
+
+---
+
+## 14. FF — Free Float vs Finish-to-Finish
+
+| 维度 | Free Float（自由浮动时间） | Finish-to-Finish（完成到完成） |
+|------|----------------------------|--------------------------------|
+| **语境** | 进度网络时间参数 | 活动逻辑关系 |
+| **关键词** | successor, delay, float | dependency, FF relationship |
+| **口诀** | 与 TF/ES/EF 同现 → 浮动时间 | 与 FS/SS/SF 同现 → 依赖关系 |
+
+---
+
+## 15. RBS — Risk vs Resource Breakdown Structure
+
+| 维度 | Risk BBS | Resource RBS |
+|------|----------|--------------|
+| **用途** | 风险分类分解 | 资源类型分解 |
+| **关键词** | risk category, threat | resource type, team |
+
+---
+
+## 16. 旧称 EVM 缩写（Legacy）
+
+| 旧称 | 现行 | 中文 |
+|------|------|------|
+| ACWP | AC | 实际成本 |
+| BCWP | EV | 挣值 |
+| BCWS | PV | 计划价值 |
+
+**来源**：【事实】PDF 第一章注释
+
+---
+
+## 17. SOW / RAM / OBS / PMB / PMBOK / PMO
+
+| 缩写 | 全称 | 易混提示 |
+|------|------|----------|
+| SOW | Statement of Work | 工作说明书，非 WBS |
+| RAM | Responsibility Assignment Matrix | 责任矩阵，含 RACI |
+| OBS | Organizational Breakdown Structure | 组织分解，非 WBS |
+| PMB | Performance Measurement Baseline | 绩效基准，非 PMBOK |
+| PMBOK | Body of Knowledge | 知识体系，非 PMB |
+| PMO | Project Management Office | 办公室，非 PMBOK |
+
+---
+
+## 18. MVP / MMF / MMP
+
+| 术语 | 中文 | 区分 |
+|------|------|------|
+| MVP | 最小可行产品 | 验证假设的学习型交付 |
+| MMF | 最小可销售功能 | 可单独销售的最小功能 |
+| MMP | 最小可销售产品 | 可上市销售的最小产品 |
+
+---
+
+## 19. Mitigate vs Enhance
+
+| 维度 | Mitigate | Enhance |
+|------|----------|---------|
+| **对象** | 威胁（负面风险） | 机会（正面风险） |
+| **动作** | 降低概率/影响 | 提高概率/影响 |
+
+---
+
+## 20. 非标准缩写（Need Review）
+
+| 缩写 | 说明 |
+|------|------|
+| FOW | 源 PDF 标注非标准，不使用 |
+| PF | 源 PDF 标注不规范 Float 写法，使用 TF/FF |
+
+---
+
 ## Agent 使用规则
 
 1. 选项涉及易混对时，先查本表再决策
 2. 错因 `concept_confusion` 时引用对应组别
 3. 讲解时给出「口诀」一行记忆
+4. 缩写歧义（PV/FF/RBS）必须先判语境再选含义

@@ -77,7 +77,29 @@
 
 ---
 
-## 6. Agent 扫描顺序
+## 6. 按来源章节索引（PMP中英文词组翻译.pdf）
+
+| 章节 | 主题 | 高频关键词 |
+|------|------|------------|
+| 一～二 | 挣值 EVM | EV, PV, AC, CPI, SPI, EAC, TCPI, variance |
+| 三 | 进度 | critical path, float, fast tracking, crashing, milestone |
+| 四～五 | 网络/估算 | FS/FF/SS/SF, PDM, analogous, parametric, bottom-up |
+| 六 | 范围 | WBS, scope creep, validate scope, gold plating |
+| 七 | 组织 | RACI, OBS, matrix, functional, projectized |
+| 八 | 整合变更 | CCB, change request, corrective, preventive |
+| 九 | 环境治理 | EEF, OPA, PMO, portfolio, program |
+| 十 | 风险 | risk register, issue log, contingency, EMV |
+| 十一～十二 | 风险应对 | avoid, mitigate, transfer, exploit, escalate |
+| 十三 | 质量 | quality audit, inspection, control chart |
+| 十四～十五 | 采购/财务 | FFP, RFP, NPV, ROI, sunk cost |
+| 十六 | 干系人 | stakeholder register, power-interest, communication |
+| 十七～十八 | 团队冲突 | collaborate, tuckman, team charter |
+| 十九～二十四 | 敏捷 | sprint, backlog, PO, SM, DoD, velocity, WIP |
+| 三十四～三十六 | 易混缩写 | PV/FF/RBS 双义, legacy EVM |
+
+---
+
+## 7. Agent 扫描顺序
 
 ```
 1. §1 问法词 → First/Next/Best
@@ -85,4 +107,5 @@
 3. §5 阶段
 4. §3 场景词 → 问题类型
 5. §2 过程词 → 登记册/过程链
+6. §6 章节索引 → 缩小术语域
 ```
