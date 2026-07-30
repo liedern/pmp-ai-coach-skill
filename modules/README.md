@@ -24,7 +24,7 @@
 |------|------|----------|----------|------------|
 | **Question Coach** | `modules/question_coach/` | 单题识别、PMP 推理、讲解、归档决策 | `workflows/question_analysis.md` | `Question`, `Mistake`（写入） |
 | **Mistake Coach** | `modules/mistake_coach/` | 错题沉淀、错因归类、薄弱点聚合 | `workflows/mistake_classification.md` | `Mistake`, `WeakPoint` |
-| **Review Coach** | `modules/review_coach/` | **执行**复习：选题、引导、打卡、掌握度 | `workflows/study_plan.md`（复习部分） | `ReviewSession`, `Mistake`（更新） |
+| **Review Coach** | `modules/review_coach/` | **复盘** + 复习执行（P1） | `workflows/review_retrospective.md`（复盘）；`study_plan.md`（复习） | `ReviewSession`, Memory 读 |
 | **Study Planner** | `modules/study_planner/` | **规划**学习：排期、今日任务、进度闭环 | `workflows/study_plan.md` | `StudyPlan`, `LearningProgress` |
 | **Training Coach** | `modules/training_coach/` | 概念讲解、资料加工、备考认知 | `skill.md` §7 + `material_processing.md` | `LearningProgress`（可选） |
 

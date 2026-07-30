@@ -1,0 +1,184 @@
+{
+  "module": "review_coach",
+  "version": "mvp-1",
+  "trigger": "retrospective",
+  "user_id": "default_user",
+  "generated_at": "2026-07-30T22:52:00+08:00",
+  "data_quality": "partial",
+  "data_sources": {
+    "mistake_count": 3,
+    "confirmed_wrong_count": 0,
+    "bookmarked_count": 2,
+    "disputed_count": 1,
+    "needs_review_count": 1
+  },
+  "knowledge_domain_ranking": [
+    {
+      "rank": 1,
+      "knowledge_domain": "实施整体变更控制",
+      "score": 0.5,
+      "wrong_count": 0,
+      "bookmark_count": 1,
+      "dominant_mistake_type": null,
+      "related_mistake_ids": ["mistake_q856_change_control_001"]
+    },
+    {
+      "rank": 2,
+      "knowledge_domain": "变更请求",
+      "score": 0.5,
+      "wrong_count": 0,
+      "bookmark_count": 1,
+      "dominant_mistake_type": null,
+      "related_mistake_ids": ["mistake_q856_change_control_001"]
+    },
+    {
+      "rank": 3,
+      "knowledge_domain": "价值交付",
+      "score": 0.5,
+      "wrong_count": 0,
+      "bookmark_count": 1,
+      "dominant_mistake_type": null,
+      "related_mistake_ids": ["mistake_agile_value_eval_001"]
+    },
+    {
+      "rank": 4,
+      "knowledge_domain": "相关方管理",
+      "score": 0.5,
+      "wrong_count": 0,
+      "bookmark_count": 0,
+      "disputed_count": 1,
+      "dominant_mistake_type": null,
+      "related_mistake_ids": ["mistake_stakeholder_deliverable_review_001"]
+    },
+    {
+      "rank": 5,
+      "knowledge_domain": "需求文件",
+      "score": 0.5,
+      "wrong_count": 0,
+      "bookmark_count": 0,
+      "disputed_count": 1,
+      "dominant_mistake_type": null,
+      "related_mistake_ids": ["mistake_stakeholder_deliverable_review_001"]
+    }
+  ],
+  "mistake_type_analysis": {
+    "insufficient_data": true,
+    "total_wrong_with_type": 0,
+    "by_type": [],
+    "top_patterns": [],
+    "summary": "当前 memory 中尚无带错因分类的确认错题；待积累更多「答错且已保存」记录后，本节将显示高频错误类型分布。"
+  },
+  "weak_points_snapshot": [
+    {
+      "knowledge_domain": "实施整体变更控制",
+      "label": "实施整体变更控制",
+      "priority_score": 10,
+      "error_trend": "new",
+      "dominant_mistake_type": null,
+      "suggested_direction": [
+        "闭卷重做收藏题 mistake_q856_change_control_001",
+        "复习 knowledge/decision_framework/predictive_logic.md 变更流程"
+      ],
+      "source": "computed"
+    },
+    {
+      "knowledge_domain": "价值交付",
+      "label": "价值交付",
+      "priority_score": 10,
+      "error_trend": "new",
+      "dominant_mistake_type": null,
+      "suggested_direction": [
+        "巩固敏捷价值交付：增量发布 vs 末期一次性交付",
+        "复习 knowledge/agile/agile_principles.md"
+      ],
+      "source": "computed"
+    },
+    {
+      "knowledge_domain": "相关方管理",
+      "label": "相关方管理（含争议题）",
+      "priority_score": 10,
+      "error_trend": "new",
+      "dominant_mistake_type": null,
+      "suggested_direction": [
+        "核对 First 题：团队+需求文件 vs 问题日志（按动作记，不按选项字母）",
+        "复习 knowledge/decision_framework/pmp_priority_rules.md — Analysis Before Action"
+      ],
+      "source": "computed"
+    }
+  ],
+  "learning_suggestions": [
+    {
+      "priority": "high",
+      "action": "对 2 道收藏题做闭卷自测，再对照 memory_rule 检查是否仍能选对",
+      "ref": "memory/data/mistake_memory.json",
+      "rationale": "当前无确认错因样本，收藏题是最可执行的巩固材料"
+    },
+    {
+      "priority": "medium",
+      "action": "争议题单独整理进笔记：可交付物评审 + 干系人担忧 → 先审阅需求文件",
+      "ref": "modules/review_coach/aggregation_rules.md",
+      "rationale": "answer_disputed 记录不纳入错因统计，但需固化正确动作"
+    },
+    {
+      "priority": "medium",
+      "action": "后续做题务必提供作答；答错保存后复盘才有错因分析",
+      "ref": "workflows/mistake_classification.md",
+      "rationale": "mistake_type 为空时 §2 高频错误类型无法生成"
+    }
+  ],
+  "next_training": {
+    "primary": {
+      "training_type": "mixed",
+      "title": "收藏题自测 + First/Next 专项",
+      "mistake_ids": [
+        "mistake_q856_change_control_001",
+        "mistake_agile_value_eval_001"
+      ],
+      "knowledge_domains": ["实施整体变更控制", "价值交付", "相关方管理"],
+      "knowledge_refs": [
+        "knowledge/decision_framework/pmp_priority_rules.md",
+        "knowledge/agile/agile_principles.md"
+      ],
+      "target_question_count": 5,
+      "estimated_minutes": 30
+    },
+    "alternatives": [
+      {
+        "training_type": "review_mistake",
+        "title": "仅重做 3 条待复习记录",
+        "mistake_ids": [
+          "mistake_q856_change_control_001",
+          "mistake_agile_value_eval_001",
+          "mistake_stakeholder_deliverable_review_001"
+        ],
+        "estimated_minutes": 20
+      }
+    ]
+  },
+  "pending_review_mistakes": [
+    {
+      "mistake_id": "mistake_q856_change_control_001",
+      "question_id": "q_change_control_customer_bypass_001",
+      "review_status": "new",
+      "repeated_count": 1,
+      "memory_rule": "客户绕过流程直找团队 → 先跟客户强调：记录、批准、走商定渠道",
+      "ingestion_tag": "bookmarked"
+    },
+    {
+      "mistake_id": "mistake_agile_value_eval_001",
+      "question_id": "q_agile_value_po_evaluation_001",
+      "review_status": "new",
+      "repeated_count": 1,
+      "memory_rule": "敏捷+项目评估 → 早交付功能 = 更多价值",
+      "ingestion_tag": "bookmarked"
+    },
+    {
+      "mistake_id": "mistake_stakeholder_deliverable_review_001",
+      "question_id": "q_it_deliverable_stakeholder_concern_001",
+      "review_status": "learning",
+      "repeated_count": 1,
+      "memory_rule": "First 争议题：按内容记——①团队+需求文件（先核实） vs ②团队+问题日志（先记录担忧）",
+      "ingestion_tag": "needs_review"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "version": "mvp-1",
+  "user_id": "default_user",
+  "last_retrospective": {
+    "module": "review_coach",
+    "version": "mvp-1",
+    "trigger": "retrospective",
+    "generated_at": "2026-07-30T23:44:00+08:00",
+    "data_quality": "partial",
+    "data_sources": {
+      "mistake_count": 3,
+      "confirmed_wrong_count": 0,
+      "bookmarked_count": 2,
+      "disputed_count": 1
+    },
+    "knowledge_domain_ranking": [
+      {
+        "rank": 1,
+        "knowledge_domain": "实施整体变更控制",
+        "score": 0.5,
+        "wrong_count": 0,
+        "bookmark_count": 1,
+        "related_mistake_ids": ["mistake_q856_change_control_001"]
+      },
+      {
+        "rank": 2,
+        "knowledge_domain": "变更请求",
+        "score": 0.5,
+        "wrong_count": 0,
+        "bookmark_count": 1,
+        "related_mistake_ids": ["mistake_q856_change_control_001"]
+      },
+      {
+        "rank": 3,
+        "knowledge_domain": "项目治理",
+        "score": 0.5,
+        "wrong_count": 0,
+        "bookmark_count": 1,
+        "related_mistake_ids": ["mistake_q856_change_control_001"]
+      },
+      {
+        "rank": 4,
+        "knowledge_domain": "价值交付",
+        "score": 0.5,
+        "wrong_count": 0,
+        "bookmark_count": 1,
+        "related_mistake_ids": ["mistake_agile_value_eval_001"]
+      },
+      {
+        "rank": 5,
+        "knowledge_domain": "敏捷原则",
+        "score": 0.5,
+        "wrong_count": 0,
+        "bookmark_count": 1,
+        "related_mistake_ids": ["mistake_agile_value_eval_001"]
+      },
+      {
+        "rank": 6,
+        "knowledge_domain": "相关方管理",
+        "score": 0.5,
+        "wrong_count": 0,
+        "bookmark_count": 0,
+        "disputed": true,
+        "related_mistake_ids": ["mistake_stakeholder_deliverable_review_001"]
+      },
+      {
+        "rank": 7,
+        "knowledge_domain": "需求文件",
+        "score": 0.5,
+        "wrong_count": 0,
+        "bookmark_count": 0,
+        "disputed": true,
+        "related_mistake_ids": ["mistake_stakeholder_deliverable_review_001"]
+      }
+    ],
+    "mistake_type_analysis": {
+      "insufficient_data": true,
+      "total_wrong_with_type": 0,
+      "by_type": [],
+      "summary": "尚无「确认答错且已标注错因」的记录，无法统计高频错误类型。"
+    },
+    "next_training": {
+      "primary": {
+        "training_type": "mixed",
+        "title": "收藏题闭卷自测 + First/Next 专项 5 题",
+        "mistake_ids": [
+          "mistake_q856_change_control_001",
+          "mistake_agile_value_eval_001",
+          "mistake_stakeholder_deliverable_review_001"
+        ],
+        "estimated_minutes": 30
+      }
+    }
+  },
+  "history": [
+    {
+      "generated_at": "2026-07-30T23:44:00+08:00",
+      "data_quality": "partial"
+    }
+  ]
+}

@@ -57,6 +57,7 @@ Input 识别（inputs/）
 | **P0** | 题目截图 / 含题干 + 选项（A/B/C/D） | **Question Coach** | **最高优先级**；即使同时含概念提问，也先走题目分析 |
 | P1 | 保存错题 / 错题本 / 薄弱点 / 错误统计 | **Mistake Coach** | 通常在 Question Coach 之后触发 |
 | P2 | 复习错题 / 打卡 / 标记掌握 | **Review Coach** | 执行复习 |
+| P2 | **复盘** / 学习总结 / 错误模式 | **Review Coach** | `workflows/review_retrospective.md` |
 | P3 | 学习计划 / 今日学什么 / 考前排期 | **Study Planner** | 规划任务 |
 | P4 | 概念学习 / 过程对比 / 整理资料 | **Training Coach** | **无完整题目**时进入 |
 
@@ -68,7 +69,7 @@ Input 识别（inputs/）
 |----------|-------------------|
 | **Question Coach** | `workflows/question_analysis.md` |
 | **Mistake Coach** | `workflows/mistake_classification.md` |
-| **Review Coach** | `workflows/study_plan.md`（复习执行） |
+| **Review Coach** | `workflows/review_retrospective.md`（复盘）；`workflows/study_plan.md`（复习执行） |
 | **Study Planner** | `workflows/study_plan.md`（规划） |
 | **Training Coach** | 本 Skill §6 + `material_processing.md` |
 

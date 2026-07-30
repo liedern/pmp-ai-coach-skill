@@ -1,0 +1,10 @@
+{
+  "version": "mvp-1",
+  "user_id": "default_user",
+  "last_retrospective": {
+    "generated_at": "2026-07-30T22:52:00+08:00",
+    "data_quality": "partial",
+    "snapshot_ref": "modules/review_coach/examples/sample_retrospective_output.json"
+  },
+  "history": []
+}

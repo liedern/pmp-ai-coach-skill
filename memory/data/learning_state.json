@@ -1,17 +1,91 @@
 {
   "version": "mvp-1",
   "user_id": "default_user",
-  "current_study_stage": "not_started",
+  "current_study_stage": "practice",
   "error_patterns": {
     "by_mistake_type": {},
     "by_knowledge_point": {},
     "top_patterns": []
   },
-  "sessions": [],
+  "sessions": [
+    {
+      "session_id": "sess_20260730_001",
+      "study_date": "2026-07-30",
+      "session_type": "practice",
+      "source_module": "mistake_coach",
+      "events": [
+        {
+          "event": "question_analyzed",
+          "source_module": "question_coach",
+          "question_id": "q_change_control_customer_bypass_001",
+          "is_correct": true,
+          "mistake_type": null,
+          "timestamp": "2026-07-30T10:15:00+08:00"
+        },
+        {
+          "event": "mistake_bookmarked",
+          "mistake_id": "mistake_q856_change_control_001",
+          "knowledge_points": ["实施整体变更控制", "变更请求", "项目治理"],
+          "ingestion_tag": "bookmarked",
+          "timestamp": "2026-07-30T10:24:00+08:00"
+        },
+        {
+          "event": "question_analyzed",
+          "source_module": "question_coach",
+          "question_id": "q_agile_value_po_evaluation_001",
+          "is_correct": true,
+          "mistake_type": null,
+          "timestamp": "2026-07-30T16:28:00+08:00"
+        },
+        {
+          "event": "mistake_bookmarked",
+          "mistake_id": "mistake_agile_value_eval_001",
+          "knowledge_points": ["价值交付", "敏捷原则", "增量交付", "Product Owner"],
+          "ingestion_tag": "bookmarked",
+          "timestamp": "2026-07-30T16:38:00+08:00"
+        },
+        {
+          "event": "question_analyzed",
+          "source_module": "question_coach",
+          "question_id": "q_it_deliverable_stakeholder_concern_001",
+          "is_correct": null,
+          "mistake_type": null,
+          "answer_disputed": true,
+          "timestamp": "2026-07-30T20:12:00+08:00"
+        },
+        {
+          "event": "mistake_saved",
+          "mistake_id": "mistake_stakeholder_deliverable_review_001",
+          "knowledge_points": ["相关方管理", "需求文件", "问题日志", "First 题争议"],
+          "ingestion_tag": "needs_review",
+          "timestamp": "2026-07-30T20:12:00+08:00"
+        },
+        {
+          "event": "retrospective_completed",
+          "source_module": "review_coach",
+          "data_quality": "partial",
+          "timestamp": "2026-07-30T23:44:00+08:00"
+        }
+      ],
+      "summary": {
+        "questions_attempted": 3,
+        "questions_correct": 2,
+        "mistakes_saved": 3,
+        "bookmarked_count": 2,
+        "wrong_count": 0,
+        "disputed_count": 1,
+        "weak_points_touched": ["analysis_before_action"]
+      }
+    }
+  ],
   "stats": {
-    "total_questions_analyzed": 0,
-    "total_mistakes_saved": 0,
-    "total_reviews": 0
+    "total_questions_analyzed": 3,
+    "total_mistakes_saved": 3,
+    "total_bookmarked": 2,
+    "total_wrong": 0,
+    "total_disputed": 1,
+    "total_reviews": 1,
+    "accuracy_rate": null
   },
-  "updated_at": null
+  "updated_at": "2026-07-30T23:44:00+08:00"
 }

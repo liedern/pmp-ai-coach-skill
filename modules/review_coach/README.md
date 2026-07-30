@@ -28,6 +28,17 @@
 | 掌握确认 | 「这道题我掌握了」「可以标记 mastered」 |
 | 间隔复习 | 「距上次复习一周了，提醒我」 |
 | 考前冲刺复习 | 「考前帮我过一遍薄弱点」 |
+| **学习复盘** | **「复盘」**（MVP：五段报告 + JSON） |
+
+### MVP 实现（`mvp-1` — 复盘）
+
+| 文件 | 说明 |
+|------|------|
+| `module.md` | 触发「复盘」、输入输出、Memory 读写 |
+| `aggregation_rules.md` | 知识域/错因/薄弱点聚合规则 |
+| `output_contract.md` | `REVIEW_RETROSPECTIVE_OUTPUT` |
+| `examples/sample_retrospective_output.json` | 示例输出 |
+| `workflows/review_retrospective.md` | 执行工作流 |
 
 ---
 
@@ -61,6 +72,7 @@
 
 | 文件 | 关系 |
 |------|------|
+| `workflows/review_retrospective.md` | **复盘**（用户说「复盘」） |
 | `workflows/study_plan.md` | 复习任务生成（待完善，单题/日级） |
 | `workflows/question_analysis.md` | 复习时错题再分析（可选） |
 
@@ -82,10 +94,9 @@
 
 | 文件 | 读写 |
 |------|------|
-| `memory/mistake_memory.md` | **读/写** |
-| `memory/weak_points.md` | 读 |
+| `memory/data/learning_state.json` | 读 |
+| `memory/data/review_retrospective.json` | 读/写（最近一次复盘快照） |
 | `memory/user_profile.md` | 读 |
-| `memory/learning_progress.md` | **写** |
 
 ### 协作模块
 

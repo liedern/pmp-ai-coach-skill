@@ -19,7 +19,20 @@ memory/data/
       ├── mistake_memory.json    ← 错题明细
       ├── weak_points.json       ← 薄弱知识点聚合
       └── learning_state.json    ← 学习状态 + 高频错误模式
+              │
+              ▼
+      Review Coach（用户：「复盘」）
+              │
+              └── review_retrospective.json  ← 最近一次复盘快照（可选）
 ```
+
+---
+
+## 2.1 Review Coach 读取约定
+
+| 触发词 | 工作流 | 写入 |
+|--------|--------|------|
+| 复盘 | `workflows/review_retrospective.md` | 可选 `review_retrospective.json`、`learning_state` 事件 |
 
 ---
 
@@ -32,6 +45,7 @@ memory/data/
 | `memory/data/weak_points.json` | 运行时薄弱点 |
 | `memory/data/learning_state.json` | 运行时学习状态 |
 | `memory/data/examples/` | 填充后的参考示例（只读，不覆盖运行时） |
+| `memory/data/review_retrospective.json` | Review Coach 最近一次复盘 JSON 快照 |
 
 **约定**：
 
@@ -49,6 +63,7 @@ memory/data/
 | 入库后自动聚合 | `weak_points.json` |
 | 每次学习/错题事件 | `learning_state.json` |
 | 用户更新掌握度 | `mistake_memory.json` + `learning_state.json` |
+| 用户说「复盘」 | `review_retrospective.json` + `learning_state`（`retrospective_completed`） |
 
 Question Coach **不直接写** Memory；必须经过 Mistake Coach。
 

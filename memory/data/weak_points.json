@@ -2,5 +2,6 @@
   "version": "mvp-1",
   "user_id": "default_user",
   "weak_points": [],
-  "last_aggregated_at": null
+  "last_aggregated_at": "2026-07-30T20:30:00+08:00",
+  "notes": "原 weak_point「先分析再记录」已撤销：对应题为多题库答案争议题，不纳入薄弱点统计。"
 }
