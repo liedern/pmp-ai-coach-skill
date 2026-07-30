@@ -1,0 +1,17 @@
+{
+  "version": "mvp-1",
+  "user_id": "default_user",
+  "current_study_stage": "not_started",
+  "error_patterns": {
+    "by_mistake_type": {},
+    "by_knowledge_point": {},
+    "top_patterns": []
+  },
+  "sessions": [],
+  "stats": {
+    "total_questions_analyzed": 0,
+    "total_mistakes_saved": 0,
+    "total_reviews": 0
+  },
+  "updated_at": null
+}

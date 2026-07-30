@@ -53,6 +53,14 @@
 | 归档决策 | `review_status` | `explain_only` / `wrong` / `needs_review` / `bookmarked` |
 | 加工报告（批量时） | — | 本模块单题为主 |
 
+### MVP 实现（`mvp-1`）
+
+| 文件 | 说明 |
+|------|------|
+| `module.md` | 输入/输出契约、七项结构化分析、下游交接 |
+| `output_contract.md` | `QUESTION_OUTPUT` JSON 字段定义 |
+| `examples/sample_output.json` | 端到端输出示例 |
+
 ---
 
 ## 数据依赖
@@ -87,6 +95,7 @@
 | 文件 | 读写 |
 |------|------|
 | `memory/mistake_memory.md` | 写（用户确认保存时） |
+| `memory/data/mistake_memory.json` | 写（MVP 运行时错题库） |
 | `memory/user_profile.md` | 读（个性化讲解） |
 
 ### 主 Skill

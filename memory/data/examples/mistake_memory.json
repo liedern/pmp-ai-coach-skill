@@ -1,0 +1,23 @@
+{
+  "version": "mvp-1",
+  "user_id": "default_user",
+  "mistakes": [
+    {
+      "mistake_id": "mistake_550e8400-e29b-41d4-a716-446655440000",
+      "question_id": "q_conflict_team_001",
+      "question_source": null,
+      "knowledge_point": ["冲突管理", "合作/解决问题"],
+      "user_answer": "A",
+      "correct_answer": "B",
+      "mistake_type": "scenario_judgment_error",
+      "mistake_reason": "用户选了 A，跳过了与团队成员的面对面沟通，直接上报发起人",
+      "repeated_count": 1,
+      "review_status": "new",
+      "memory_rule": "团队冲突：先面对面，再升级",
+      "eco_domain": "people",
+      "last_wrong_at": "2026-07-29T18:05:00+08:00",
+      "last_reviewed_at": null
+    }
+  ],
+  "updated_at": "2026-07-29T18:05:00+08:00"
+}

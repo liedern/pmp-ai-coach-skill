@@ -1,0 +1,66 @@
+{
+  "module": "question_coach",
+  "version": "mvp-1",
+  "question_recognition": {
+    "question_text": "项目执行期间，两名团队成员因工作分配发生冲突。项目经理首先应该做什么？",
+    "options": {
+      "A": "立即将冲突上报给发起人",
+      "B": "与双方会面，合作解决问题",
+      "C": "重新分配任务，避免进一步冲突",
+      "D": "更新资源管理计划"
+    },
+    "user_answer": "A",
+    "question_intent": "first",
+    "project_approach": "predictive",
+    "project_phase": "executing",
+    "confidence": "high",
+    "source": null,
+    "exam_set": null,
+    "ocr_metadata": null
+  },
+  "correct_answer": "B",
+  "correct_answer_confidence": "high",
+  "explanation": {
+    "correct_answer_reason": "团队冲突应首先通过面对面沟通与合作解决，符合 Collaborate before escalate 原则",
+    "pmp_logic_summary": "People 领域冲突题：先协作沟通，再考虑升级",
+    "option_analysis": {
+      "A": "不优先 — 跳过分析与协作，过度升级",
+      "B": "正确 — 合作/解决问题是首选冲突策略",
+      "C": "不优先 — 未了解根因就调整分配，可能回避问题",
+      "D": "不优先 — 与当前冲突无直接关联，非第一步"
+    },
+    "standard_sequence": [
+      "了解冲突背景与双方诉求",
+      "促成面对面沟通",
+      "合作制定解决方案",
+      "必要时再升级"
+    ],
+    "memory_rule": "团队冲突：先面对面，再升级；先合作，再强制",
+    "trap_patterns": ["过度升级", "混淆 First 与 Best"]
+  },
+  "knowledge_points": ["冲突管理", "合作/解决问题", "团队领导力"],
+  "eco_domain": "people",
+  "process": "管理团队",
+  "terminology_explanations": [
+    {
+      "term": "Collaborate / Problem Solve",
+      "term_zh": "合作/解决问题",
+      "definition": "相关方共同协商，寻求双赢方案",
+      "exam_signal": "团队冲突、意见分歧时的首选策略",
+      "ref": "knowledge/decision_framework/pmp_priority_rules.md"
+    },
+    {
+      "term": "Escalate",
+      "term_zh": "升级上报",
+      "definition": "将问题提交给更高层级决策者",
+      "exam_signal": "应在团队内部沟通尝试之后，而非第一步",
+      "ref": "knowledge/language/pmp_terms.md"
+    }
+  ],
+  "plain_language_summary": "两个人因为工作吵起来了，项目经理的第一反应不是找老板，而是让双方坐下来把话说清楚，一起想办法解决。PMP 的逻辑是：能自己解决就先自己解决，谈不拢再往上报。",
+  "mistake_type": "scenario_judgment_error",
+  "mistake_reason": "用户选了 A，跳过了与团队成员的面对面沟通，直接上报发起人，违反「先协作再升级」原则。",
+  "review_status": "wrong",
+  "created_at": "2026-07-29T18:00:00+08:00",
+  "pending_confirmations": ["source", "exam_set"]
+}

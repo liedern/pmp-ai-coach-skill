@@ -53,6 +53,15 @@
 | 模式摘要 | 自然语言报告 | 高频 `mistake_type`、重复知识点 |
 | 复习优先级 | `priority_score` | 供 Review Coach 排序 |
 
+### MVP 实现（`mvp-1`）
+
+| 文件 | 说明 |
+|------|------|
+| `module.md` | 入库决策、Memory 写入、MISTAKE_OUTPUT 契约 |
+| `decision_rules.md` | 入库矩阵、去重规则、字段映射 |
+| `examples/sample_mistake_record.json` | 对齐 `mistake_schema.md` 的记录示例 |
+| `examples/sample_handoff.json` | 完整 MISTAKE_OUTPUT 示例 |
+
 ---
 
 ## 数据依赖
@@ -82,6 +91,9 @@
 | 文件 | 读写 |
 |------|------|
 | `memory/mistake_memory.md` | **读/写** |
+| `memory/data/mistake_memory.json` | **读/写**（MVP 运行时） |
+| `memory/data/weak_points.json` | **写**（聚合） |
+| `memory/data/learning_state.json` | **写**（学习状态） |
 | `memory/weak_points.md` | **写**（聚合） |
 | `memory/user_profile.md` | 读 |
 | `memory/learning_progress.md` | 写（错题相关进度） |

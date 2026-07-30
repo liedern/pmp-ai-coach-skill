@@ -1,0 +1,39 @@
+{
+  "module": "mistake_coach",
+  "version": "mvp-1",
+  "save_decision": {
+    "should_save": true,
+    "reason": "用户答错（A≠B），review_status=wrong",
+    "ingestion_tag": "wrong",
+    "action": "create"
+  },
+  "mistake_record": {
+    "mistake_id": "mistake_550e8400-e29b-41d4-a716-446655440000",
+    "question_id": "q_conflict_team_001",
+    "question_text": "项目执行期间，两名团队成员因工作分配发生冲突。项目经理首先应该做什么？",
+    "options": {
+      "A": "立即将冲突上报给发起人",
+      "B": "与双方会面，合作解决问题",
+      "C": "重新分配任务，避免进一步冲突",
+      "D": "更新资源管理计划"
+    },
+    "user_answer": "A",
+    "correct_answer": "B",
+    "wrong_type": "scenario_judgment_error",
+    "wrong_reason": "用户选了 A，跳过了与团队成员的面对面沟通，直接上报发起人，违反「先协作再升级」原则。",
+    "knowledge_points": ["冲突管理", "合作/解决问题", "团队领导力"],
+    "eco_domain": "people",
+    "process": "管理团队",
+    "review_status": "new",
+    "review_count": 0,
+    "created_at": "2026-07-29T18:05:00+08:00",
+    "updated_at": "2026-07-29T18:05:00+08:00"
+  },
+  "memory_updates": {
+    "mistake_memory": "created",
+    "weak_points": "reaggregated",
+    "learning_state": "appended"
+  },
+  "pattern_insight": null,
+  "created_at": "2026-07-29T18:05:00+08:00"
+}
