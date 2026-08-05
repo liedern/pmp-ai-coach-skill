@@ -7,10 +7,10 @@
 
 ## 模块目标
 
-负责 **个人错题的沉淀、错因归类、重复错误识别与薄弱点上升**，将单题分析结果转化为可复用的学习记忆。
+负责 **真实错题**（用户答错）的沉淀、错因归类、重复错误识别与薄弱点上升，将单题分析结果转化为 Review Coach 可聚合的学习记忆。
 
-- 接收 Question Coach 的 `DATA_HANDOFF` 或用户主动归档指令
-- 维护 `mistake_memory` 视图（含 `repeated_count`、`review_status`）
+- 接收 Question Coach 的 `DATA_HANDOFF`；**仅当** `user_answer` ≠ `correct_answer` 时写入 `mistake_memory`
+- 维护 `mistake_memory`（含 `error_type`、`error_reason`、`knowledge_point`、`review_status`、`repeated_count`）
 - 聚合生成 `weak_points` 薄弱域报告
 - 为 Study Planner / Review Coach 提供优先级输入
 
@@ -22,8 +22,8 @@
 
 | 场景 | 典型用户说法 |
 |------|--------------|
-| 加入错题本 | 「保存这道题」「收录到错题本」 |
-| 做错后自动归档 | Question Coach 判定 `review_status = wrong` |
+| 加入错题本 | 「加入错题本」——**答错已自动入库**；用于强调复习，非二次保存 |
+| 做错后自动归档 | Question Coach 输出且满足 P0 真实错题 |
 | 查询薄弱点 | 「我哪方面最弱？」「错误模式是什么？」 |
 | 查看错题统计 | 「冲突管理我错几次了？」 |
 | 更新复习状态 | 「这道题我掌握了」「标记为已复习」 |
@@ -40,7 +40,7 @@
 | 历史记忆 | `memory/mistake_memory.md` | 去重、累加 `repeated_count` |
 | 用户档案 | `memory/user_profile.md` | 掌握内容过滤 |
 
-**必填字段（保存时）**：`question_id`、`user_answer`（有错因判断时）、`mistake_type`（有用户答案时）、`knowledge_point`。
+**必填字段（真实错题入库）**：`question_id`、`user_answer`、`correct_answer`、`error_type`、`error_reason`、`knowledge_point`、`review_status`；**禁止**新写 `mistake_type` / `eco_domain`（读时兼容）。
 
 ---
 
@@ -50,15 +50,16 @@
 |------|------|------|
 | 错题记忆条目 | `mistake_memory` 单条 JSON/YAML | 对齐 `database/mistake_schema.md` |
 | 薄弱点聚合 | `weak_points` 记录列表 | `error_count`、`error_trend`、`suggested_direction` |
-| 模式摘要 | 自然语言报告 | 高频 `mistake_type`、重复知识点 |
+| 模式摘要 | 自然语言报告 | 高频 `error_type`、重复知识点 |
 | 复习优先级 | `priority_score` | 供 Review Coach 排序 |
 
-### MVP 实现（`mvp-1`）
+### MVP 实现（`mvp-1.1`）
 
 | 文件 | 说明 |
 |------|------|
-| `module.md` | 入库决策、Memory 写入、MISTAKE_OUTPUT 契约 |
-| `decision_rules.md` | 入库矩阵、去重规则、字段映射 |
+| `module.md` | P0 门槛、Memory 写入、MISTAKE_OUTPUT 契约 |
+| `decision_rules.md` | P0、入库矩阵、去重、`error_type` 枚举与映射 |
+| `memory_record_contract.md` | `mistake_memory.json` 单条结构 |
 | `examples/sample_mistake_record.json` | 对齐 `mistake_schema.md` 的记录示例 |
 | `examples/sample_handoff.json` | 完整 MISTAKE_OUTPUT 示例 |
 
@@ -70,7 +71,7 @@
 
 | 文件 | 关系 |
 |------|------|
-| `workflows/mistake_classification.md` | 跨题模式识别（待完善） |
+| `workflows/mistake_classification.md` | 入库与 Memory 更新（含 P0） |
 | `workflows/question_analysis.md` §5–§6 | 错因枚举与保存决策 |
 
 ### 知识库（Knowledge）

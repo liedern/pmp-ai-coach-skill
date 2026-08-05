@@ -5,6 +5,8 @@
 > **输出职责**：本文件 §7 为题目分析的**唯一固定输出模板**；`skill.md` 仅保留全局输出规则，不重复本模板。
 >
 > 本文件定义**执行步骤与输出契约**，不替代 `skill.md` 中的角色定义与推理原则。
+>
+> **前置**：用户单题录入（文字 / 截图 / 补答案）先执行 `workflows/question_capture.md`，将 `CAPTURE_RECORD` 作为本章 §2 的预填充输入。
 
 ---
 
@@ -46,16 +48,16 @@
 | 用户上传题目截图 | 图片附件，或提及「看图」「这道题」 | 尝试 OCR → 结构化 → 讲解；缺失信息标【待确认】 |
 | 用户粘贴题目文字 | 含题干 + 选项的纯文本 | 直接结构化 → 讲解 |
 | 用户提供题目 + 自己的答案 + 正确答案 | 明确给出 A/B/C/D 或选项内容 | 结构化 → 讲解 → 错因判断 → 按规则归档 |
-| 用户仅询问题目，不要求保存 | 「帮我讲讲」「分析一下」「不用保存」 | 完整讲解，`review_status = explain_only` |
-| 用户明确要求加入错题本 | 「加入错题本」「保存这道题」「收录」 | 讲解 + 错因判断 + `review_status` 按规则设定 |
+| 用户仅询问题目，不要求持久化 | 「帮我讲讲」「分析一下」「不用保存」 | 完整讲解，`review_status = explain_only`；有作答仍写 History |
+| 用户说「加入错题本」等 | 在**已答错**场景下等同于确认复习关注；**不**单独触发入库（答错已自动写 Mistake） | 讲解 + 若 P0 答错则已入库；答对则说明「本题未答错，不入错题库」 |
 
 ### 意图消歧
 
 若触发信号冲突，按以下优先级处理：
 
-1. **用户显式指令**（「不要保存」「只要讲解」）> 默认归档行为
-2. **用户显式指令**（「加入错题本」「收藏」）> 默认「做对不保存」
-3. 无显式指令时：有用户答案且做错 → 建议保存；做对或不确定 → 询问是否保存
+1. **用户显式指令**（「不要保存」「只要讲解」）> 默认归档行为（`force_skip` 时不写 Mistake）
+2. **「收藏这题」** → 仅 Bookmark；**不**写 Mistake
+3. **无显式指令**：有 `user_answer` → **必写 History**；若答错 → **自动写 Mistake**（**禁止**询问「是否保存错题」）
 
 ---
 
@@ -239,9 +241,9 @@ Step 4: 去重检测（若有历史题库访问能力）
 
 | 条件 | 行为 |
 |------|------|
-| 用户**未提供**答案 | `mistake_type = null`；输出「用户错因：【待确认】未提供用户答案，无法判断错因」 |
-| 用户答案**正确** | `mistake_type = null`；可标注「掌握状态：已掌握 / 不确定」 |
-| 用户答案**错误** | 给出主类型 + 判断依据（引用用户选项与正确逻辑的差异点） |
+| 用户**未提供**答案 | `error_type = null`；输出「用户错因：【待确认】未提供用户答案，无法判断错因」 |
+| 用户答案**正确** | `error_type = null`；可标注「掌握状态：已掌握 / 不确定」 |
+| 用户答案**错误** | 给出主类型（写入 `error_type`）+ 判断依据（`error_reason`） |
 | 用户自述思路但未选选项 | 按自述思路判断，标注【推测】 |
 
 ### 5.3 输出格式
@@ -256,37 +258,33 @@ Step 4: 去重检测（若有历史题库访问能力）
 
 ---
 
-## 6. Save Decision（归档决策）
+## 6. Data Routing（三分流 · 自动）
 
-根据用户意图与答题情况，决定 `review_status` 及是否写入题库。
+根据作答结果 **自动分流**，**禁止**询问「是否保存错题」。
 
 ### 6.1 决策矩阵
 
-| 场景 | `review_status` | 动作 |
-|------|-----------------|------|
-| 用户明确「只讲解，不保存」 | `explain_only` | 输出讲解，不生成入库记录 |
-| 用户做错（或自述做错） | `wrong` | 保存为**错题** |
-| 用户做对但表示不确定 | `needs_review` | 保存为**待巩固题** |
-| 用户主动收藏（无论对错） | `bookmarked` | 保存为**收藏题** |
-| 与已有题目重复 | — | **更新**做题记录（新 attempt），不重复创建题目 |
-| 无用户答案 + 无保存指令 | `explain_only` | 默认仅讲解；可询问是否保存 |
+| 场景 | History | Mistake | Bookmark | 用户提示 |
+|------|:-------:|:-------:|:--------:|----------|
+| 仅讲解、无作答 | 可选 | 否 | 否 | — |
+| 答对 | ✅ | 否 | 仅主动收藏 | — |
+| **答错** | ✅ History | **✅ Mistake 自动** | 仅主动收藏 | **「本题已自动加入错题库」** + `error_type` / `error_reason` / 知识点 / 复习建议 |
 
-### 6.2 重复题处理
+流程：**答错 → History 记录 → 自动写入 Mistake**（无需用户确认）。
+| 用户说「收藏这题」等 | 不变 | 不变 | ✅ | 「已加入收藏」 |
+| 与已有错题重复再次答错 | ✅ 新 History | 更新 Mistake | — | 「错题记录已更新」 |
 
-检测到重复时：
+### 6.2 重复错题处理
 
-1. 保留原 `question_id`（若已知）
-2. 追加本次 `user_answer`、`attempt_date`、`mistake_type`
-3. 更新 `review_status`（以最新一次为准，或按产品规则取「最需要复习」状态）
-4. 输出中注明：「本题已存在于错题本，已更新做题记录」
+1. 保留原 `question_id` / `mistake_id`
+2. 追加 History；Mistake：`repeated_count += 1`，刷新 `error_type`、`error_reason`（**禁止**新写 `mistake_type` / `eco_domain`）
+3. 输出：「本题已存在于错题本，已更新做题记录」
 
-### 6.3 保存前确认
+### 6.3 置信度说明
 
-以下情况**建议**向用户确认后再入库：
+正确答案为【推测】且置信度中/低时：仍可自动入库 Mistake，但在记录中标注 `confidence_level=low`，并在用户可见输出中说明「答案为推测，错题库已标记低置信」。
 
-- 正确答案为【推测】，置信度中/低
-- 题干或选项有【待确认】缺失
-- 用户意图不明确（未说保存也未说不要）
+**删除**：任何「回复保存错题再入库」的交互。
 
 ---
 
@@ -369,11 +367,13 @@ Step 4: 去重检测（若有历史题库访问能力）
 
 ## 10. 归档状态
 
-- **是否保存**：是 / 否
-- **review_status**：explain_only / wrong / needs_review / bookmarked
-- **重复题**：是（已更新记录）/ 否
+- **History**：已写入 / 跳过
+- **Mistake**：答错则 **已自动加入错题库**（含错误类型 / 原因 / 知识点）
+- **Bookmark**：仅当用户主动收藏 → 已加入 / 未收藏
 - **待确认项**：[列出需用户补充的字段]
 ```
+
+> 原 §10「是否保存 / review_status=bookmarked」已废弃；收藏与错题分离。
 
 ---
 
@@ -410,9 +410,10 @@ Step 4: 去重检测（若有历史题库访问能力）
 | `exam_set` | string \| null | 套卷名称或编号 | 未知 `null` |
 | `project_approach` | string | 项目类型 | `predictive` / `agile` / `hybrid` / `unknown` |
 | `project_phase` | string | 主要项目阶段 | `initiating` / `planning` / `executing` / `monitoring_controlling` / `closing` / `unknown` |
-| `eco_domain` | string | ECO 领域 | `people` / `process` / `business_environment` / `unknown` |
+| `exam_domain` | string | ECO 领域（对外字段） | `people` / `process` / `business_environment` / `unknown` |
 | `knowledge_points` | string[] | 具体知识点列表 | 1–5 条，短标签 |
-| `mistake_type` | string \| null | 错因分类 | 枚举见 §5.1 小写蛇形；无错因 `null` |
+| `error_type` | string \| null | 错因分类 | 枚举见 §5.1 小写蛇形；无错因 `null` |
+| `error_reason` | string \| null | 错因说明 | 答错必填 |
 | `explanation` | object | 讲解摘要 | 见 §8.3 |
 | `review_status` | string | 复习/归档状态 | `explain_only` / `wrong` / `needs_review` / `bookmarked` |
 | `created_at` | string | 记录创建时间 | ISO 8601，如 `2026-07-28T10:40:00+08:00` |
@@ -449,6 +450,8 @@ Step 4: 去重检测（若有历史题库访问能力）
 | `pending_confirmations` | 待用户确认字段名数组 |
 | `ocr_metadata` | `{ "source": "ocr", "confidence": 0.85, "image_ref": "..." }` |
 
+**历史只读别名**（禁止出现在新 DATA_HANDOFF）：`mistake_type`、`eco_domain`、`mistake_reason` — 读取旧数据时等同 `error_type` / `exam_domain` / `error_reason`（见 `database/schema_overview.md` §1.1）。
+
 ### 8.5 完整示例
 
 ```json
@@ -466,9 +469,10 @@ Step 4: 去重检测（若有历史题库访问能力）
   "exam_set": null,
   "project_approach": "predictive",
   "project_phase": "executing",
-  "eco_domain": "people",
+  "exam_domain": "people",
   "knowledge_points": ["冲突管理", "合作/解决问题", "团队领导力"],
-  "mistake_type": "scenario_judgment_error",
+  "error_type": "scenario_judgment_error",
+  "error_reason": "用户选了 A，跳过协作沟通直接上报发起人",
   "explanation": {
     "correct_answer_reason": "冲突应首先通过面对面沟通与合作解决，而非直接升级",
     "pmp_logic_summary": "Collaborate before escalate — PM 应先促成双方协商",
@@ -543,7 +547,7 @@ Step 4: 去重检测（若有历史题库访问能力）
 | 下游 | 触发条件 |
 |------|----------|
 | `mistake_classification.md` | 多题错因聚合、模式识别（单题分类在本工作流 §5 完成） |
-| `study_plan.md` | 错题积累后，根据 `knowledge_points` 与 `mistake_type` 调整学习计划 |
+| `study_plan.md` | 错题积累后，根据 `knowledge_points` 与 `error_type` 调整学习计划 |
 | `database/question_schema.md` | 入库时映射 `Data Handoff` 字段到持久化模型 |
 
 单题分析的终点是 **§7 Fixed Output + §8 Data Handoff**；是否真正写入数据库，由调用方（Agent 工具 / Web API）执行。

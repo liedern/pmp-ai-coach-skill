@@ -54,11 +54,12 @@ Input 识别（inputs/）
 
 | 优先级 | 输入信号 | 内部模块 | 说明 |
 |--------|----------|----------|------|
-| **P0** | 题目截图 / 含题干 + 选项（A/B/C/D） | **Question Coach** | **最高优先级**；即使同时含概念提问，也先走题目分析 |
-| P1 | 保存错题 / 错题本 / 薄弱点 / 错误统计 | **Mistake Coach** | 通常在 Question Coach 之后触发 |
+| **P0** | 题目截图 / 含题干 + 选项（A/B/C/D）/ 「录入」单题 | **Question Coach** | 先 `question_capture.md` 采集 → `question_analysis.md`；答错自动 Mistake；有作答写 History；主动收藏 → Bookmark |
+| P1 | 错题本 / 薄弱点 / 错误统计 / 答错后的自动交接 | **Mistake Coach** | **无需**用户说「保存错题」 |
+| P1b | 「收藏这题」/「加入重点题」 | **Bookmark**（经 Question Coach 分流） | ≠ 错题 |
 | P2 | 复习错题 / 打卡 / 标记掌握 | **Review Coach** | 执行复习 |
-| P2 | **复盘** / 学习总结 / 错误模式 | **Review Coach** | `workflows/review_retrospective.md` |
-| P3 | 学习计划 / 今日学什么 / 考前排期 | **Study Planner** | 规划任务 |
+| P2 | **复盘** / 学习总结 / 错误模式 | **Review Coach** | 错因主要来自 Mistake Memory；History 补趋势/争议/重复作答；Bookmark 不参与错误统计 |
+| P3 | 学习计划 / **今日学什么** / 今日任务 / 考前排期 | **Study Planner** | 优先 Mistake + WeakPoint；Bookmark 辅助 |
 | P4 | 概念学习 / 过程对比 / 整理资料 | **Training Coach** | **无完整题目**时进入 |
 
 **P0 硬规则**：只要输入可识别为「一道题的截图或题干+选项」，**必须**进入 Question Coach，不得路由到 Training Coach。
@@ -67,10 +68,10 @@ Input 识别（inputs/）
 
 | 内部模块 | 主 Workflow / 模式 |
 |----------|-------------------|
-| **Question Coach** | `workflows/question_analysis.md` |
+| **Question Coach** | `workflows/question_capture.md`（采集）→ `workflows/question_analysis.md`（分析） |
 | **Mistake Coach** | `workflows/mistake_classification.md` |
 | **Review Coach** | `workflows/review_retrospective.md`（复盘）；`workflows/study_plan.md`（复习执行） |
-| **Study Planner** | `workflows/study_plan.md`（规划） |
+| **Study Planner** | `workflows/study_plan.md` + `modules/study_planner/` |
 | **Training Coach** | 本 Skill §6 + `material_processing.md` |
 
 ### 2.4 关键边界（路由前必判）
@@ -116,10 +117,10 @@ Input 识别（inputs/）
    拆解题干、正确答案、干扰项与用户错误原因。
 
 3. **错误模式识别**（Mistake Coach）  
-   从多次错题中归纳薄弱点与高频失误类型。
+   答错自动沉淀 Mistake Memory；与 Bookmark / History 严格分离。
 
 4. **个性化学习规划**（Study Planner）  
-   基于错题库与薄弱域，给出可执行的学习计划。
+   读取错题库、薄弱点与学习状态，按 `modules/study_planner/planning_rules.md` 生成每日可执行计划。
 
 5. **错题复习执行**（Review Coach）  
    引导重做、打卡、更新掌握度。
@@ -204,29 +205,17 @@ Input 识别（inputs/）
 
 **适用模块**：Question Coach、Mistake Coach。
 
-用户错误**必须**归入以下类型之一（可注明次要类型）。存储值使用 snake_case，与 `database/mistake_schema.md` §3 一致。
+用户错误**必须**归入以下产品类型之一（可注明次要类型）。存储值使用 snake_case，与 `database/mistake_schema.md` §3.4 一致。
 
-| 存储值 | 英文名称 | 中文说明 |
-|--------|----------|----------|
-| `knowledge_gap` | Knowledge Gap | 知识盲区 |
-| `concept_confusion` | Concept Confusion | 概念混淆 |
-| `scenario_judgment_error` | Scenario Judgment Error | 场景判断错误 |
-| `process_sequence_error` | Process Sequence Error | 流程顺序错误 |
-| `role_and_responsibility_error` | Role and Responsibility Error | 角色与职责错误 |
-| `terminology_problem` | Terminology Problem | 术语理解问题 |
-| `carelessness` | Carelessness | 粗心 |
-| `insufficient_information` | Insufficient Information | 信息不足 |
+| 存储值 | 中文说明 |
+|--------|----------|
+| `knowledge_gap` | 知识缺失 |
+| `concept_confusion` | 概念混淆 |
+| `careless_error` | 粗心 |
+| `question_reading_error` | 题干理解错误 |
+| `trap_option_error` | 选项陷阱 |
 
-### 分类规则
-
-| 条件 | `mistake_type` |
-|------|----------------|
-| 用户未提供 `user_answer` | `null` |
-| 用户答对且无疑义 | `null` |
-| 用户答错或自述做错 | 必选一项主类型 |
-| 信息不足无法分类 | `insufficient_information` 或暂存 `null` |
-
-分类时说明判断依据，并关联到可纠正动作。
+答错 → **自动** Mistake Memory；**不**再要求用户确认保存。
 
 ---
 
@@ -276,7 +265,7 @@ Input 识别（inputs/）
 |------|----------|
 | 题目分析 | `workflows/question_analysis.md` §7 |
 | 概念教学 | 本 Skill §7 Teaching Mode |
-| 学习计划 / 复习 | `workflows/study_plan.md`（待完善） |
+| 学习计划 / 复习 | `workflows/study_plan.md` + `modules/study_planner/output_contract.md` |
 | 资料加工 | `workflows/material_processing.md` |
 
 ### 全局规则
@@ -296,6 +285,8 @@ Input 识别（inputs/）
 
 | 类型 | 路径 |
 |------|------|
+| Study Planner 模块 | `modules/study_planner/module.md` |
+| 每日计划契约 | `modules/study_planner/output_contract.md` |
 | 模块架构 | `modules/README.md` |
 | 数据总览 | `database/schema_overview.md` |
 | 题目分析流程 | `workflows/question_analysis.md` |

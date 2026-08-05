@@ -1,10 +1,10 @@
 {
   "module": "mistake_coach",
-  "version": "mvp-1",
+  "version": "mvp-1.1",
   "save_decision": {
     "should_save": true,
-    "reason": "用户答错（A≠B），review_status=wrong",
-    "ingestion_tag": "wrong",
+    "reason": "真实错题：user_answer=A, correct_answer=B",
+    "is_real_mistake": true,
     "action": "create"
   },
   "mistake_record": {
@@ -19,13 +19,15 @@
     },
     "user_answer": "A",
     "correct_answer": "B",
+    "error_type": "scenario_judgment_error",
+    "error_reason": "用户选了 A，跳过了与团队成员的面对面沟通，直接上报发起人，违反「先协作再升级」原则。",
     "wrong_type": "scenario_judgment_error",
     "wrong_reason": "用户选了 A，跳过了与团队成员的面对面沟通，直接上报发起人，违反「先协作再升级」原则。",
+    "knowledge_point": ["冲突管理", "合作/解决问题", "团队领导力"],
     "knowledge_points": ["冲突管理", "合作/解决问题", "团队领导力"],
-    "eco_domain": "people",
+    "exam_domain": "people",
     "process": "管理团队",
     "review_status": "new",
-    "review_count": 0,
     "created_at": "2026-07-29T18:05:00+08:00",
     "updated_at": "2026-07-29T18:05:00+08:00"
   },

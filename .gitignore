@@ -3,3 +3,6 @@ source_materials/**/*.pdf
 source_materials/**/*.xlsx
 source_materials/**/*.pptx
 source_materials/**/*.docx
+
+# Runtime memory (per-user); public repo ships templates under memory/data/examples/
+memory/data/*.json

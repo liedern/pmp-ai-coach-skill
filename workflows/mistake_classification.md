@@ -11,7 +11,8 @@
 | 原则 | 说明 |
 |------|------|
 | 上游优先 | 以 `QUESTION_OUTPUT` 为事实来源，不重新推理答案 |
-| 不编造 | 无用户答案不写 `wrong_type`；不确定不强行入库 |
+| P0 真实错题 | `user_answer` ≠ `correct_answer` 才入库 |
+| 不编造 | 缺 `error_type` / `error_reason` 不入库 |
 | 幂等去重 | 同题更新，不重复创建 |
 | MVP 无库 | 写入 `memory/data/*.json`，不调用数据库 |
 
@@ -21,8 +22,8 @@
 
 | 触发场景 | 识别信号 |
 |----------|----------|
-| Question Coach 完成分析 | 收到 `DATA_HANDOFF` 且 `review_status ≠ explain_only` |
-| 用户主动保存 | 「加入错题本」「保存这道题」 |
+| Question Coach 完成分析 | 收到 `DATA_HANDOFF` → 先执行 **§2.5 P0**，再决策 |
+| 用户说「加入错题本」 | 走 `question_analysis`；**答错已自动入库**，答对则不入库 |
 | 用户查询薄弱点 | 「我哪方面最弱」→ 读取 Memory，不走入库 |
 | 用户更新复习状态 | 「这道题掌握了」→ 更新 `mistake_memory`，本工作流 §6 |
 
@@ -41,12 +42,26 @@
 
 ---
 
-## 3. Save Decision
+## 2.5 Real Mistake Gate（P0）
 
-按 `modules/mistake_coach/decision_rules.md` §1 执行：
+按 `modules/mistake_coach/decision_rules.md` **§0**：
 
 ```
-读取 review_status + user_override
+normalize(user_answer) != normalize(correct_answer)
+  AND both non-null
+        │
+        ├─ false → should_save=false，输出原因，结束
+        └─ true  → 继续 §3
+```
+
+---
+
+## 3. Save Decision
+
+按 `modules/mistake_coach/decision_rules.md` **§1** 执行（在 P0 通过后）：
+
+```
+读取 user_override + error_type / error_reason 完整性
         │
         ▼
 应用决策矩阵 → should_save
@@ -77,7 +92,7 @@
 按 `decision_rules.md` §3 映射字段，生成 `mistake_record`：
 
 - 新增：分配 `mistake_id`、`question_id`
-- 更新：保留原 `mistake_id`，刷新 `wrong_type`、`updated_at`
+- 更新：保留原 `mistake_id`，刷新 `error_type`、`error_reason`、`updated_at`、`last_wrong_at`（**禁止**新写 `mistake_type` / `mistake_reason` / `eco_domain`）
 
 完整结构见 `database/mistake_schema.md` 与 `modules/mistake_coach/examples/sample_mistake_record.json`。
 
@@ -91,24 +106,23 @@
 {
   "mistake_id": "...",
   "question_id": "...",
-  "knowledge_point": ["冲突管理"],
   "user_answer": "A",
   "correct_answer": "B",
-  "mistake_type": "scenario_judgment_error",
-  "mistake_reason": "...",
-  "repeated_count": 1,
-  "review_status": "new",
-  "memory_rule": "团队冲突：先面对面，再升级",
-  "last_wrong_at": "2026-07-29T18:05:00+08:00"
+  "error_type": "scenario_judgment_error",
+  "error_reason": "...",
+  "knowledge_point": ["冲突管理"],
+  "review_status": "new"
 }
 ```
+
+结构权威定义见 `modules/mistake_coach/memory_record_contract.md`。对错与争议同时写入 `question_history.json`（`result` / `answer_disputed`）。
 
 ### Step 5.2 重算 weak_points.json
 
 ```
 按 knowledge_point 分组
 error_count = sum(repeated_count) 或 记录条数
-dominant_mistake_type = 众数
+dominant_error_type = 组内 error_type 众数（读时回退 mistake_type）
 error_trend = 与上次聚合比较（new / rising / stable / falling）
 priority_score = min(100, error_count * 15 + repeated_bonus)
 ```
@@ -122,12 +136,13 @@ priority_score = min(100, error_count * 15 + repeated_bonus)
   "event": "mistake_saved",
   "mistake_id": "...",
   "knowledge_points": ["冲突管理"],
-  "mistake_type": "scenario_judgment_error",
+  "error_type": "scenario_judgment_error",
+  "error_type": "scenario_judgment_error",
   "timestamp": "2026-07-29T18:05:00+08:00"
 }
 ```
 
-更新 `error_patterns` 计数（按 `mistake_type` 与 `knowledge_points`）。
+更新 `error_patterns` 计数（按 `error_type` 与 `knowledge_point`）。
 
 ---
 
@@ -150,7 +165,7 @@ priority_score = min(100, error_count * 15 + repeated_bonus)
 ```
 IF repeated_count >= 2
    OR 同 knowledge_point 的 error_count >= 3
-   OR 同 mistake_type 近 7 天 >= 2
+   OR 同 error_type 近 7 天 >= 2
 THEN 生成 pattern_insight
 ```
 
@@ -183,6 +198,10 @@ THEN 生成 pattern_insight
 QUESTION_OUTPUT
         │
         ▼
+  ┌─────────────┐
+  │ 0. P0 Gate  │ ← user_answer ≠ correct_answer
+  └──────┬──────┘
+         ▼
   ┌─────────────┐
   │ 1. Validate │
   └──────┬──────┘

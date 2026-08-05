@@ -9,13 +9,13 @@
 
 ## 1. 模块定位
 
-Mistake Coach 承接 Question Coach 的结构化输出，完成：
+Mistake Coach 承接 Question Coach 的结构化输出，**答错即自动入库**（`user_answer` ≠ `correct_answer`），无需用户说「保存错题」：
 
 ```
 QUESTION_OUTPUT（DATA_HANDOFF）
         │
         ▼
-入库决策（是否写入错题库）
+入库决策（P0：是否真实错题 → 是否写入错题库）
         │
         ├─ 否 → 输出决策说明，结束
         │
@@ -44,7 +44,7 @@ Question Coach 的 `QUESTION_OUTPUT`（见 `modules/question_coach/output_contra
 |------|------|
 | `memory/data/mistake_memory.json` | 去重、`repeated_count` 累加 |
 | `memory/data/weak_points.json` | 薄弱点趋势 |
-| 用户显式指令 | 「加入错题本」「不要保存」覆盖默认决策 |
+| 用户显式指令 | 「不要保存」→ `force_skip`；「加入错题本」**仅在答错时**生效 |
 
 ### 2.3 输入 JSON（`MISTAKE_INPUT`）
 
@@ -62,7 +62,7 @@ Question Coach 的 `QUESTION_OUTPUT`（见 `modules/question_coach/output_contra
 | 字段 | 说明 |
 |------|------|
 | `question_output` | 完整 `QUESTION_OUTPUT` |
-| `user_override.force_save` | `true` 时强制入库（即使 `explain_only`） |
+| `user_override.force_save` | 已废弃绕过 P0；答对时不得入库 |
 | `user_override.force_skip` | `true` 时强制不入库 |
 
 ---
@@ -70,8 +70,9 @@ Question Coach 的 `QUESTION_OUTPUT`（见 `modules/question_coach/output_contra
 ## 3. 执行流程
 
 ```
+0. Real Mistake Gate  ← decision_rules.md §0（P0）
 1. Validate Input       ← 校验 QUESTION_OUTPUT 必填字段
-2. Save Decision        ← decision_rules.md
+2. Save Decision        ← decision_rules.md §1
 3. Dedup Check          ← 对比 mistake_memory.json
 4. Build Mistake Record ← 对齐 mistake_schema.md
 5. Update Memory        ← 写入三个 JSON 文件
@@ -97,11 +98,11 @@ Question Coach 的 `QUESTION_OUTPUT`（见 `modules/question_coach/output_contra
 ```json
 {
   "module": "mistake_coach",
-  "version": "mvp-1",
+  "version": "mvp-1.1",
   "save_decision": {
     "should_save": true,
-    "reason": "用户答错，review_status=wrong",
-    "ingestion_tag": "wrong"
+    "reason": "真实错题：user_answer=A, correct_answer=B",
+    "is_real_mistake": true
   },
   "mistake_record": null,
   "memory_updates": {
@@ -118,23 +119,22 @@ Question Coach 的 `QUESTION_OUTPUT`（见 `modules/question_coach/output_contra
 
 入库时生成，**字段对齐** `database/mistake_schema.md`。完整示例见 `examples/sample_mistake_record.json`。
 
-MVP 必填字段：
+MVP 真实错题必填字段（对齐 `memory_record_contract.md`，**仅**写入 `mistakes[]` 核心九项）：
 
 | 字段 | 说明 |
 |------|------|
 | `mistake_id` | UUID 或 `mistake_{timestamp}` |
 | `question_id` | 内容指纹或 UUID |
-| `question_text` | 题干快照 |
-| `options` | 选项快照 |
 | `user_answer` | 用户答案 |
 | `correct_answer` | 正确答案 |
-| `wrong_type` | 映射自 `mistake_type`（见 decision_rules.md §3） |
-| `wrong_reason` | 映射自 `mistake_reason` |
-| `knowledge_points` | 知识点列表 |
-| `answer_explanation` | 来自 `explanation` 对象 |
+| `error_type` | §`decision_rules.md` 3.1 产品五项 |
+| `error_reason` | 错因说明 |
+| `knowledge_point` | 知识点列表 |
 | `review_status` | 初始 `new` |
-| `review_count` | 默认 `0` |
-| `created_at` / `updated_at` | ISO 8601 |
+
+可选：`exam_domain`。**禁止新写** `mistake_type`、`mistake_reason`、`eco_domain`（见 `schema_overview.md` §1.1）。
+
+题干快照、选项、`wrong_type` 等见 `database/mistake_schema.md` 关系型扩展；**对错 / 争议 / 收藏** 见 `question_history.json` / `bookmark_memory.json`。
 
 ### 4.3 `pattern_insight`（可选）
 
@@ -144,7 +144,7 @@ MVP 必填字段：
 {
   "is_repeat": true,
   "repeated_count": 2,
-  "dominant_mistake_type": "scenario_judgment_error",
+  "dominant_error_type": "scenario_judgment_error",
   "related_knowledge_points": ["冲突管理"],
   "message": "你在「冲突管理」类题目中第 2 次出现场景判断错误"
 }
@@ -168,9 +168,10 @@ MVP 必填字段：
 
 | 约束 | 说明 |
 |------|------|
+| P0 真实错题 | `user_answer` ≠ `correct_answer` 才入库；答对、收藏、做对不确信均不入库 |
 | 不重复创建 | 同一 `question_id` 更新已有记录，`repeated_count += 1` |
-| 不编造 | 无 `user_answer` 不标错因；`explain_only` 默认不入库 |
-| 映射一致 | MVP `mistake_type` → `wrong_type` 按 decision_rules §3 |
+| 不编造 | 无 `user_answer` 或缺 `error_type` / `error_reason` 不入库 |
+| 映射一致 | `error_type` 产品五项；读时兼容 `mistake_type`；可选 `wrong_type` 映射 §3.3 |
 | 不连数据库 | MVP 仅写 `memory/data/*.json` |
 
 ---
@@ -180,7 +181,8 @@ MVP 必填字段：
 | 文件 | 说明 |
 |------|------|
 | `module.md` | 本文件 |
-| `decision_rules.md` | 入库决策矩阵与字段映射 |
+| `decision_rules.md` | P0 门槛、入库决策矩阵与字段映射 |
+| `memory_record_contract.md` | `mistake_memory.json` 单条写入契约 |
 | `examples/sample_mistake_record.json` | Mistake 记录示例 |
 | `examples/sample_handoff.json` | 完整 MISTAKE_OUTPUT 示例 |
 | `workflows/mistake_classification.md` | 执行步骤 |

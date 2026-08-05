@@ -290,7 +290,7 @@ target_path: knowledge/pmbok/scope.md
 | **Difficulty** | `difficulty` | 否 | `easy` / `medium` / `hard` |
 | **Trap Type** | `trap_type` | 推荐 | 对齐 `trap_patterns.md`（如 T02 过早升级） |
 
-用户错题（D 类）额外字段：`user_answer`、`mistake_type` → 交 `question_analysis` 工作流。
+用户错题（D 类）额外字段：`user_answer`、`error_type` → 交 `question_analysis` 工作流。
 
 ### 5.2 处理流程
 

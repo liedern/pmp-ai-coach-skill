@@ -1,10 +1,24 @@
 {
-  "version": "mvp-1",
+  "version": "mvp-1.2",
   "user_id": "default_user",
-  "last_retrospective": {
-    "generated_at": "2026-07-30T22:52:00+08:00",
-    "data_quality": "partial",
-    "snapshot_ref": "modules/review_coach/examples/sample_retrospective_output.json"
+  "record_kind": "review_snapshot",
+  "snapshot_status": "current",
+  "generated_at": "2026-01-15T10:00:00+08:00",
+  "source_revisions": {
+    "mistake_memory_updated_at": "2026-01-15T10:00:00+08:00",
+    "question_history_updated_at": "2026-01-15T10:00:00+08:00"
   },
-  "history": []
+  "notes": "Example Dataset — 写后快照示意；复盘时必须从源数据重算。",
+  "last_retrospective": {
+    "module": "review_coach",
+    "version": "mvp-1.2",
+    "trigger": "retrospective",
+    "data_quality": "partial",
+    "data_sources": {
+      "mistake_count": 2,
+      "confirmed_wrong_count": 1,
+      "disputed_count": 1
+    }
+  },
+  "snapshot_history": []
 }

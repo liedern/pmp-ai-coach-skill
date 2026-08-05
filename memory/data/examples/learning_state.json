@@ -1,58 +1,54 @@
 {
-  "version": "mvp-1",
+  "version": "mvp-1.2",
   "user_id": "default_user",
   "current_study_stage": "practice",
   "error_patterns": {
-    "by_mistake_type": {
-      "scenario_judgment_error": {
+    "by_error_type": {
+      "concept_confusion": {
         "count": 1,
-        "last_at": "2026-07-29T18:05:00+08:00"
+        "last_at": "2026-01-15T09:30:00+08:00"
       }
     },
     "by_knowledge_point": {
-      "冲突管理": {
+      "挣值管理": {
         "count": 1,
-        "dominant_type": "scenario_judgment_error"
+        "dominant_type": "concept_confusion"
       }
     },
     "top_patterns": []
   },
   "sessions": [
     {
-      "session_id": "sess_20260729_001",
-      "study_date": "2026-07-29",
+      "session_id": "sess_example_001",
+      "study_date": "2026-01-15",
       "session_type": "practice",
-      "source_module": "mistake_coach",
+      "source_module": "question_coach",
       "events": [
         {
           "event": "question_analyzed",
           "source_module": "question_coach",
-          "question_id": "q_conflict_team_001",
-          "is_correct": false,
-          "mistake_type": "scenario_judgment_error",
-          "timestamp": "2026-07-29T18:00:00+08:00"
-        },
-        {
-          "event": "mistake_saved",
-          "mistake_id": "mistake_550e8400-e29b-41d4-a716-446655440000",
-          "knowledge_points": ["冲突管理", "合作/解决问题"],
-          "mistake_type": "scenario_judgment_error",
-          "timestamp": "2026-07-29T18:05:00+08:00"
+          "question_id": "q_example_evm_001",
+          "result": "wrong",
+          "error_type": "concept_confusion",
+          "timestamp": "2026-01-15T09:30:00+08:00"
         }
       ],
       "summary": {
         "questions_attempted": 1,
         "questions_correct": 0,
         "mistakes_saved": 1,
-        "weak_points_touched": ["冲突管理"]
+        "wrong_count": 1
       }
     }
   ],
   "stats": {
     "total_questions_analyzed": 1,
     "total_mistakes_saved": 1,
+    "total_bookmarked": 0,
+    "total_wrong": 1,
+    "total_disputed": 0,
     "total_reviews": 0,
-    "accuracy_rate": 0.0
+    "accuracy_rate": null
   },
-  "updated_at": "2026-07-29T18:05:00+08:00"
+  "updated_at": "2026-01-15T09:30:00+08:00"
 }

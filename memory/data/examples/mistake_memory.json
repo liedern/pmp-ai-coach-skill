@@ -1,23 +1,29 @@
 {
-  "version": "mvp-1",
+  "version": "mvp-1.2",
   "user_id": "default_user",
   "mistakes": [
     {
-      "mistake_id": "mistake_550e8400-e29b-41d4-a716-446655440000",
-      "question_id": "q_conflict_team_001",
-      "question_source": null,
-      "knowledge_point": ["冲突管理", "合作/解决问题"],
+      "mistake_id": "mistake_example_evm_001",
+      "question_id": "q_example_evm_001",
       "user_answer": "A",
+      "correct_answer": "D",
+      "error_type": "concept_confusion",
+      "error_reason": "EV<PV 表示进度落后（SPI<1），应优先考虑进度压缩（Example Dataset）。",
+      "knowledge_point": ["挣值管理", "SPI", "进度压缩"],
+      "exam_domain": "process",
+      "review_status": "new"
+    },
+    {
+      "mistake_id": "mistake_example_stakeholder_001",
+      "question_id": "q_example_stakeholder_first_001",
+      "user_answer": "D",
       "correct_answer": "B",
-      "mistake_type": "scenario_judgment_error",
-      "mistake_reason": "用户选了 A，跳过了与团队成员的面对面沟通，直接上报发起人",
-      "repeated_count": 1,
-      "review_status": "new",
-      "memory_rule": "团队冲突：先面对面，再升级",
-      "eco_domain": "people",
-      "last_wrong_at": "2026-07-29T18:05:00+08:00",
-      "last_reviewed_at": null
+      "error_type": "process_order_error",
+      "error_reason": "First 场景示例：先核实需求文件再记入问题日志（Example Dataset）。",
+      "knowledge_point": ["相关方管理", "需求文件"],
+      "exam_domain": "people",
+      "review_status": "learning"
     }
   ],
-  "updated_at": "2026-07-29T18:05:00+08:00"
+  "updated_at": "2026-01-15T10:00:00+08:00"
 }

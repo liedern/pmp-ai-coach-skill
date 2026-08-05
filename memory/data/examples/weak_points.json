@@ -1,26 +1,25 @@
 {
-  "version": "mvp-1",
+  "version": "mvp-1.2",
   "user_id": "default_user",
   "weak_points": [
     {
-      "weak_point_id": "wp_conflict_001",
-      "knowledge_domain": "conflict_management",
-      "label": "冲突管理",
-      "eco_domain": "people",
+      "weak_point_id": "wp_example_evm_001",
+      "knowledge_domain": "earned_value_management",
+      "label": "挣值管理 / 进度落后应对（示例）",
+      "exam_domain": "process",
       "error_count": 1,
       "repeated_error_count": 1,
-      "last_error_at": "2026-07-29T18:05:00+08:00",
+      "last_error_at": "2026-01-15T09:30:00+08:00",
       "error_trend": "new",
-      "dominant_mistake_type": "scenario_judgment_error",
+      "dominant_error_type": "concept_confusion",
       "suggested_direction": [
-        "复习 knowledge/decision_framework/pmp_priority_rules.md — Collaborate Before Escalate",
-        "专项练习：People 领域冲突类情境题 5 道",
-        "记忆规则：团队冲突先面对面，再升级"
+        "SPI=EV/PV；SPI<1 → 进度压缩（Fast track / Crashing）"
       ],
-      "related_mistake_ids": ["mistake_550e8400-e29b-41d4-a716-446655440000"],
-      "priority_score": 25,
-      "updated_at": "2026-07-29T18:05:00+08:00"
+      "related_mistake_ids": ["mistake_example_evm_001"],
+      "priority_score": 15,
+      "updated_at": "2026-01-15T09:30:00+08:00"
     }
   ],
-  "last_aggregated_at": "2026-07-29T18:05:00+08:00"
+  "last_aggregated_at": "2026-01-15T09:30:00+08:00",
+  "notes": "Example Dataset — 结构样例，非用户真实薄弱点。"
 }

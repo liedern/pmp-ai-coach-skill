@@ -1,0 +1,100 @@
+{
+  "module": "study_planner",
+  "version": "mvp-1",
+  "trigger": "daily_plan",
+  "user_id": "default_user",
+  "plan_date": "2026-01-15",
+  "generated_at": "2026-01-15T09:00:00+08:00",
+  "data_quality": "good",
+  "data_sources": {
+    "mistake_count": 2,
+    "confirmed_wrong_count": 1,
+    "weak_point_count": 1,
+    "has_retrospective_snapshot": true,
+    "exam_date": null,
+    "days_to_exam": null
+  },
+  "daily_plan": {
+    "focus_knowledge_domains": [
+      {
+        "rank": 1,
+        "knowledge_domain": "挣值管理",
+        "exam_domain": "process",
+        "reason": "Example Dataset — concept_confusion 确认错题",
+        "allocated_minutes": 28,
+        "suggested_actions": ["review_mistake", "knowledge_learning"]
+      }
+    ],
+    "recommended_review_question_count": 1,
+    "mistake_redo_count": 1,
+    "drill_count": 2,
+    "weak_point_priorities": [
+      {
+        "rank": 1,
+        "weak_point_id": "wp_example_evm_001",
+        "knowledge_domain": "挣值管理",
+        "priority_score": 15,
+        "dominant_error_type": "concept_confusion",
+        "source": "mistake_memory_aggregate"
+      }
+    ],
+    "recommended_materials": [
+      {
+        "material_type": "mistake_review",
+        "title": "闭卷重做确认错题（Example Dataset）",
+        "target_refs": {
+          "mistake_ids": ["mistake_example_evm_001"]
+        },
+        "reason": "仅 confirmed_wrong 驱动复习队列",
+        "estimated_minutes": 20
+      },
+      {
+        "material_type": "knowledge_doc",
+        "title": "PMP 决策树 — First / Next",
+        "path": "knowledge/decision_framework/decision_tree.md",
+        "reason": "流程类场景判断",
+        "estimated_minutes": 15
+      }
+    ],
+    "estimated_study_minutes": 55,
+    "completion_status": "pending"
+  },
+  "study_plan": {
+    "study_plan_id": "plan_daily_example_001",
+    "title": "每日学习计划（Example Dataset）",
+    "start_date": "2026-01-15",
+    "end_date": "2026-01-15",
+    "status": "active",
+    "generated_by": "agent",
+    "context_snapshot": {
+      "study_stage": "practice",
+      "days_to_exam": null,
+      "available_minutes": 60,
+      "pace_multiplier": 1.0
+    }
+  },
+  "study_plan_items": [
+    {
+      "item_id": "item_example_001",
+      "study_plan_id": "plan_daily_example_001",
+      "user_id": "default_user",
+      "scheduled_date": "2026-01-15",
+      "item_type": "review_mistake",
+      "title": "闭卷重做 1 道确认错题",
+      "description": "Example Dataset — mistake_example_evm_001",
+      "target_count": 1,
+      "target_refs": {
+        "mistake_ids": ["mistake_example_evm_001"]
+      },
+      "priority": 100,
+      "status": "pending"
+    }
+  ],
+  "horizon_preview": [
+    {
+      "date": "2026-01-16",
+      "theme": "流程类错题巩固（示例）",
+      "estimated_minutes": 60
+    }
+  ]
+}
