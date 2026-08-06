@@ -1,7 +1,5 @@
-# PMP AI Coach Skill
-
-**版本**：v0.1.1  
-**类型**：可维护的 Agent Skill（文档 + 工作流 + 轻量 Memory），非传统应用仓库。
+# PMP AI Coach Skill｜面向 PMP 备考者的 AI 智能学习助手
+基于 AI Agent 的 PMP 真题分析与个性化复习教练
 
 PMP AI Coach Skill 是一个专注于 PMP 项目管理考试备考场景 的 AI 学习助手。
 它围绕 PMP 考试中的真实学习流程，对刷题、错题整理、答案判断、知识点分析和复习规划进行结构化管理。
@@ -12,6 +10,8 @@ PMP AI Coach Skill 是一个专注于 PMP 项目管理考试备考场景 的 AI 
 
 帮助备考者建立属于自己的 PMP 学习系统。
 
+**版本**：v0.1.1  
+**类型**：可维护的 Agent Skill（文档 + 工作流 + 轻量 Memory），非传统应用仓库。
 ---
 
 ## 项目介绍
