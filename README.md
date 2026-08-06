@@ -70,7 +70,7 @@ PMP AI Coach 帮助考生用 **单题深度分析 → 自动错题库 → 复盘
 
 ## 使用方式
 
-### 在 Cursor / Agent 平台中启用
+### 在 Cursor / Codex/ Workbuddy/ Agent 平台中启用
 
 1. 将本仓库作为 Skill 或规则上下文加载。  
 2. Agent **必须先读** [`skill.md`](skill.md)，再按意图加载 `workflows/` 与 `modules/`。  
