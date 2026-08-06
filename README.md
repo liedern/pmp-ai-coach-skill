@@ -1,13 +1,14 @@
 # PMP AI Coach Skill｜面向 PMP 备考者的 AI 智能学习助手
+
+![PMP备考](https://img.shields.io/badge/领域-PMP备考-blue)
+![AI学习助手](https://img.shields.io/badge/类型-AI学习助手-purple)
+![错题整理](https://img.shields.io/badge/功能-错题分析-orange)
+![复习规划](https://img.shields.io/badge/功能-个性化复习计划-green)
+![项目管理](https://img.shields.io/badge/知识领域-项目管理-red)
+![PMBOK](https://img.shields.io/badge/体系-PMBOK-yellow)
+![开源项目](https://img.shields.io/badge/项目-开源-brightgreen)
+
 基于 AI Agent 的 PMP 真题分析与个性化复习教练
-
-![PMP](https://img.shields.io/badge/PMP-Exam-blue)
-![AI Coach](https://img.shields.io/badge/AI-Coach-purple)
-![Mistake Bank](https://img.shields.io/badge/Mistake-Bank-orange)
-![Review Plan](https://img.shields.io/badge/Review-Plan-green)
-![Project Management](https://img.shields.io/badge/Domain-Project%20Management-red)
-![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen)
-
 > 基于 AI Agent 的 PMP 真题分析、错题沉淀与个性化复习规划工具。
 PMP AI Coach Skill 是一个专注于 PMP 项目管理考试备考场景 的 AI 学习助手。
 它围绕 PMP 考试中的真实学习流程，对刷题、错题整理、答案判断、知识点分析和复习规划进行结构化管理。
