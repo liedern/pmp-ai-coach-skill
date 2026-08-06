@@ -106,6 +106,16 @@ Input 识别（inputs/）
 3. 意图模糊时，用一句澄清问题（如「您是想分析这道题，还是了解某个概念？」）
 4. 模块详情与数据依赖见 `modules/README.md`；数据写入遵循 `database/schema_overview.md`
 
+### 2.6 产品反馈（Product Lab）
+
+日常做题**不自动读取**下列文件；仅当你要求「按反馈待修改意见改」或 `@` 相关路径时处理 `待修改` 条目。
+
+| 路径 | 用途 |
+|------|------|
+| `inputs/product_lab/反馈待修改意见.md` | 修改意见**总表**（`待修改` / `已修改`） |
+| `inputs/product_lab/修改日志.md` | 每次落地改 Skill/工作流后的变更记录 |
+| `inputs/product_lab/反馈修改意见/` | 单条意见附件（可选） |
+
 ---
 
 ## 3. Core Responsibilities
@@ -136,6 +146,15 @@ Input 识别（inputs/）
 ## 4. PMP Reasoning Framework
 
 **适用模块**：Question Coach（及 Review Coach 重讲错题时）。
+
+### 4.0 Question 分析硬规则（P0，见 `workflows/question_analysis.md`）
+
+在 §4.1–§4.5 五步推理之前，**必须**满足：
+
+1. **题干优先，后看选项（FB-002）** — 先完整阅读题干（含英文与问法 First/Next/Best）；**先输出解题思路**（类型/阶段/领域/决策原则/标准顺序），**再**用思路对照 A–D；**禁止**跳过题干直接从选项里挑「听起来对」的句子。
+2. **截图题：独立判断后再核对标记（FB-001）** — **阶段一**仅用题干与选项文字推理，忽略红蓝框、勾叉、解析区标答；**阶段二**再读截图/题库标记并对比；不一致时**不得**无说明地迎合标注而改写阶段一推理。
+
+用户可见输出中，「PMP 考试逻辑」/「标准处理顺序」**先于**「选项逐项分析」。
 
 所有题目分析**必须**按以下五步执行，不可跳步。
 
@@ -291,5 +310,7 @@ Input 识别（inputs/）
 | 模块架构 | `modules/README.md` |
 | 数据总览 | `database/schema_overview.md` |
 | 题目分析流程 | `workflows/question_analysis.md` |
+| 产品反馈总表 | `inputs/product_lab/反馈待修改意见.md` |
+| 产品修改日志 | `inputs/product_lab/修改日志.md` |
 | 决策框架 | `knowledge/decision_framework/` |
 | 个人记忆 | `memory/` |

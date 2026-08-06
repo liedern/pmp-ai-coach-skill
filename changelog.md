@@ -63,6 +63,12 @@
 
 ## [Unreleased]
 
+### Product Lab & 讲题规则（FB-001 / FB-002）
+
+- **`inputs/product_lab/`**：`反馈待修改意见.md`（总表）、`修改日志.md`、`反馈修改意见/`（附件）  
+- **题干优先**：先解题思路后选项（`skill.md` §4.0；`question_analysis.md` §2.4、§7）  
+- **截图防锚定**：两阶段独立判断再核对标记（`skill.md` §4.0；`question_analysis.md` §2.5、§7 §5.1）  
+
 ---
 
 ## [0.1.1] — 2026-08-06

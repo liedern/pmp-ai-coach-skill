@@ -37,7 +37,7 @@ OCR 识别（未来扩展：ocr_metadata）
 Question Capture Workflow
       │
       ▼
-Question Analysis Workflow
+Question Analysis Workflow（须执行 `question_analysis.md` §2.4–§2.5：题干优先、截图两阶段防锚定）
       │
       ▼
 Mistake Database / mistake_memory（用户要求保存时）
