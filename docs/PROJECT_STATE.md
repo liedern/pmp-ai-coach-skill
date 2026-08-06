@@ -191,7 +191,7 @@
 | 标签 | 提交 | 日期 | 说明 |
 |------|------|------|------|
 | **v0.1.0** | `46f5922db25825461301ed4dfa21e3b3925e09a7` | 2026-08-04 | 首个发布：`release: PMP AI Coach Skill v0.1.0` |
-| **v0.1.1** | *见下方本次 push 后* | 2026-08-06 | Answer Validation + `docs/PROJECT_STATE.md` |
+| **v0.1.1** | `b29b871` | 2026-08-06 | Answer Validation + `docs/PROJECT_STATE.md` |
 
 **分支**：`cursor/init-pmp-ai-coach-skill`（跟踪 `origin`）
 
