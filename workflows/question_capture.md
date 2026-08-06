@@ -1,6 +1,6 @@
 # Question Capture Workflow（单题采集）
 
-> **版本**：`mvp-1.0`  
+> **版本**：`mvp-1.1`（Answer Validation v0.1.1 采集侧）  
 > **定位**：真实学习场景的**入口工作流**——用**最少用户输入**完成结构化采集，再交给 `question_analysis.md` 做 PMP 讲解与 `DATA_HANDOFF` 写入。  
 > **不新增** Memory 文件、数据库表或实体类型；`Question` 仍为逻辑实体（见 `database/question_schema.md` §1 MVP）。
 
@@ -58,7 +58,7 @@ Agent **从已有信息推断档位**，仅对**阻断写入**的缺口提问（
 |------|----------------|------------|:--------------:|:--------------:|
 | **L0** | 截图 **或** 题干+选项 | OCR/切分；`user_answer`/`correct_answer` 待确认 | 仅当之后补全答案 | 否（无对错） |
 | **L1** | L0 + **我的答案**（字母或选项原文） | 无标答则【推测】+ `needs_review`；有作答写 History | ✅ | 仅当标答已知且判错 |
-| **L2** | L1 + **正确答案**（或官方解析中含标答） | 完整对错；答错自动 Mistake | ✅ | 答错 ✅ |
+| **L2** | L1 + **正确答案**（或官方解析中含标答） | 完整对错；答错自动 Mistake（对 **adjudication**） | ✅ | 答错 ✅（见 Analysis §5.5） |
 | **L3** | L2 + **解析**（可选） | 优先采用【事实】解析，减少推测讲解 | ✅ | 答错 ✅ |
 
 **收藏**：任意档位均可；用户说「收藏/已收藏」→ 仅 `bookmark_memory.json`，**不**替代 Mistake。
@@ -94,7 +94,7 @@ Agent **从已有信息推断档位**，仅对**阻断写入**的缺口提问（
 | 别名 | 映射字段 |
 |------|----------|
 | 我的答案 / 用户答案 / 我选 | `user_answer` |
-| 正确答案 / 标答 / 答案 | `correct_answer` |
+| 正确答案 / 标答 / 答案 | `platform_answer`（题库侧；非判题唯一依据） |
 | 解析 / 分析 / Explanation | `official_explanation` |
 | 来源 / 题库 | `source` |
 | 练习 x/180、第 x 题 | `exam_set` / 题号元数据 |
@@ -124,17 +124,23 @@ raw_input（text | image | mixed）
 | 匹配 | 读 `question_history.json` / `mistake_memory.json`：题干归一化 + 选项指纹（A–D 文本） |
 | 命中 | 复用已有 `question_id` |
 | 新建 | 分配 `question_id`：`q_{语义短 slug}_{序号}`（小写、下划线，与现有 `memory/data` 风格一致） |
-| 逻辑 Question | 在 `CAPTURE_RECORD` 与后续 `DATA_HANDOFF` 中携带 `question_text`、`options`、`correct_answer`、`source`、`exam_set` |
+| 逻辑 Question | 在 `CAPTURE_RECORD` 与后续 `DATA_HANDOFF` 中携带 `question_text`、`options`、`platform_answer`（及兼容键 `correct_answer`=采集标答）、`source`、`exam_set` |
 
-### Step 5.3 判定 `result`
+### Step 5.3 判定 `result`（预检；最终以 Analysis §5.5 `adjudication_answer` 为准）
 
 ```text
-normalize(user_answer) == normalize(correct_answer)
+normalize(user_answer) == normalize(adjudication_answer)
   AND both non-null     → result = correct
-normalize(user_answer) != normalize(correct_answer)
+normalize(user_answer) != normalize(adjudication_answer)
   AND both non-null     → result = wrong
-仅一方为 null           → result = unknown（写 History 可选，review_status = needs_review）
-user_answer 为 null     → 不写 Mistake；错因 analysis 标 explain_only / needs_review
+仅一方为 null           → result = unknown
+user_answer 为 null     → 不写 Mistake
+```
+
+Capture 阶段若尚未有 `adjudication_answer`，可用 `platform_answer` **仅作预检**；写入 History 前必须由 Question Analysis 完成 AEL。
+
+```text
+（预检，可选）normalize(user_answer) vs normalize(platform_answer)
 ```
 
 `normalize`：去空格、统一为大写字母；选项原文匹配时映射到 A–D。
@@ -144,7 +150,8 @@ user_answer 为 null     → 不写 Mistake；错因 analysis 标 explain_only /
 | 条件 | `question_history.json` | `mistake_memory.json` | `bookmark_memory.json` |
 |------|-------------------------|------------------------|-------------------------|
 | 有 `user_answer` 且非 `force_skip` 讲解-only | 追加 `history_id` | — | — |
-| `result = wrong` 且 `error_type`+`error_reason` 完整 | 已写 | **自动追加/更新** Mistake | — |
+| `result = wrong`（对 adjudication）且 `error_type`+`error_reason` 完整且 `decision_rules` §0.2 通过 | 已写 | **自动追加/更新** Mistake | — |
+| 争议：用户=Coach ≠ 平台 | 已写 `answer_disputed` | **不写** | — |
 | `result = correct` | 已写 | **不写** | — |
 | 用户「收藏」 | 不变 | 不变 | 追加 `bookmark_id` |
 | `result = unknown` | 可写 `result: unknown` | **不写** | — |
@@ -171,7 +178,7 @@ user_answer 为 null     → 不写 Mistake；错因 analysis 标 explain_only /
 
 - 进度条 `x/180` → `exam_set`
 - 标红选项 → `user_answer`
-- 蓝框/解析页标答 → `correct_answer`（【事实】）
+- 蓝框/解析页标答 → `platform_answer`（【事实】；须经 Analysis 生成 `coach_answer`）
 
 ---
 
@@ -182,6 +189,7 @@ user_answer 为 null     → 不写 Mistake；错因 analysis 标 explain_only /
 | 输入形态、最少追问 | ✅ | 消费 Capture 结果 |
 | PMP 推理、选项逐项分析 | — | ✅ |
 | `error_type` / `exam_domain` | — | ✅ §5 |
+| Answer Evaluation（AEL） | — | ✅ §5.5 |
 | 固定输出模板 §7 | — | ✅ |
 | `DATA_HANDOFF` JSON | — | ✅ §8 |
 | Memory 物理写入 | 决策矩阵 §5.4 | 与 Mistake 工作流一致 |
@@ -202,6 +210,7 @@ Capture 完成后、分析前，Agent 内部保持一致（可附在日志，**�
   "question_text": "…",
   "options": { "A": "…", "B": "…", "C": "…", "D": "…" },
   "user_answer": "B",
+  "platform_answer": "A",
   "correct_answer": "A",
   "official_explanation": null,
   "source": "培训机构题库",

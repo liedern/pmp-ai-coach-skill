@@ -7,11 +7,41 @@
 
 ## 1. Purpose
 
-本 Schema 承载 **Review Coach 与 Study Planner 的分工边界**在数据层的体现：
+本 Schema 承载 **Review Coach 与 Study Planner 的分工边界**在数据层的体现，并明确与 **三类用户记忆** 的关系：
+
+### 1.1 三类用户记忆 → 学习层
+
+```
+QuestionHistory     做题轨迹 / 正确率统计
+        │
+Mistake Memory      仅真实错题（自动）
+        │
+        ▼
+   WeakPoint 聚合（Mistake Coach）
+        │
+        ▼
+   Review Coach（复盘 / 错误模式）──只读 Mistake + WeakPoint
+        │
+        ▼
+   Study Planner（每日计划）──优先 Mistake + WeakPoint + LearningState
+        │                         └── 辅助：Bookmark（考前收藏复习）
+        ▼
+   LearningProgress / StudyPlan
+```
+
+| 数据源 | Review Coach | Study Planner | LearningProgress |
+|--------|:------------:|:-------------:|:----------------:|
+| **Mistake Memory** | **主输入** | **优先** | 错题事件 |
+| **WeakPoint** | 读 | **优先** | — |
+| **Learning State** | 读 | **优先** | 同源 |
+| **Bookmark Memory** | **禁止当错误分析** | 辅助（考前收藏） | 收藏事件可选 |
+| **Question History** | 不做错因主源 | 可做题量/正确率 | 统计 |
+
+### 1.2 实体归属
 
 | 实体 | 归属能力 | 说明 |
 |------|----------|------|
-| `WeakPoint` | Mistake Coach 写；Planner/Review 读 | 错题聚合的薄弱域视图 |
+| `WeakPoint` | Mistake Coach 写；Planner/Review 读 | **仅从 Mistake** 聚合，不得用 Bookmark 冒充错误 |
 | `StudyPlan` + `StudyPlanItem` | Study Planner 写；Review 读 | **规划**：何时学什么、复习哪些题 |
 | `ReviewSession` | Review Coach 写 | **执行**：一次复习会话的过程与结果 |
 | `LearningProgress` | 全模块写 | 时间轴：汇总每日/每次学习成效 |
@@ -20,19 +50,21 @@
 
 ## 2. WeakPoint（薄弱点）
 
-从 `Mistake` 按 `knowledge_points` / `eco_domain` / `wrong_type` 聚合。
+从 **`Mistake`（Mistake Memory）** 按 `knowledge_point` / `exam_domain` / `error_type` 聚合。
+
+> **禁止**：将 Bookmark 计入 `error_count`。
 
 | 字段名称 | 类型建议 | 是否必须 | 用途 |
 |----------|----------|----------|------|
 | `weak_point_id` | UUID | **是** | 主键 |
 | `user_id` | UUID | **是** | 外键 → User |
 | `knowledge_domain` | VARCHAR(128) | **是** | 领域标识，如「冲突管理」 |
-| `eco_domain` | ENUM | 否 | `people` / `process` / `business_environment` |
+| `exam_domain` | ENUM | 否 | `people` / `process` / `business_environment`（**读兼容** `eco_domain`） |
 | `error_count` | INTEGER | **是** | 累计错题数 |
 | `repeated_error_count` | INTEGER | 否 | 重复做错次数 |
 | `last_error_at` | TIMESTAMPTZ | 否 | 最近错误时间 |
 | `error_trend` | ENUM | 推荐 | `increasing` / `stable` / `decreasing` |
-| `dominant_mistake_type` | ENUM | 否 | 最高频 `wrong_type` |
+| `dominant_error_type` | ENUM | 否 | 最高频 `wrong_type` |
 | `priority_score` | DECIMAL | 推荐 | 复习优先级（0–100），Planner/Review 排序用 |
 | `suggested_direction` | TEXT / JSON | 推荐 | 建议学习行动 |
 | `related_mistake_ids` | JSON | 否 | 关联错题 ID 列表（抽样） |

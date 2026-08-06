@@ -8,27 +8,58 @@
 
 ## 1. Purpose
 
-`Mistake` 是 PMP AI Coach 中**以用户为中心**的核心实体，记录「某用户在某次做题中答错（或需巩固）的一道题」及其分析结果与复习进度。
+`Mistake`（Mistake Memory）是 PMP AI Coach 中**以用户为中心**的核心实体，**仅**记录「某用户在某次做题中**答错**」及其分析结果与复习进度。
+
+> **三分流硬规则**（与 Bookmark / History 严格分离）：
+>
+> | 存储 | 触发 | 禁止 |
+> |------|------|------|
+> | **Mistake Memory** | `user_answer` ≠ **`adjudication_answer`**（v0.1.1；legacy = `correct_answer`）→ **自动**入库 | 答对、仅收藏、仅讲解、争议且用户=Coach |
+> | Bookmark Memory | 用户主动收藏 | 不得因答错自动写入收藏 |
+> | Question History | 凡做过的题均记一笔 | 不得替代 Mistake |
 
 该数据用于：
 
 | 用途 | 说明 |
 |------|------|
-| **保存用户错题** | 持久化题干、选项、作答、讲解与错因，形成个人错题本 |
-| **分析错误模式** | 按 `error_type`（MVP）/ `wrong_type`（扩展）、`knowledge_point`、`eco_domain` 等聚合，供 **Review Coach** 复盘与错误模式报告 |
-| **生成个性化学习建议** | 为 `study_plan`、每日复习推送、薄弱点报告、`workflows/review_retrospective.md` 提供输入 |
-| **支持未来数据库迁移** | 字段命名稳定、枚举可扩展；题目正文适度冗余，降低对主题库强依赖 |
+| **错题复盘** | Review Coach **只读** Mistake Memory |
+| **错因 / 高频错误模式** | 按 `error_type`、`knowledge_point`、`exam_domain` 聚合 |
+| **薄弱知识点识别** | Mistake Coach → WeakPoint |
+| **学习计划生成** | Study Planner **优先**读 Mistake Memory |
+| **Web / 多用户** | `user_id` 必填；字段命名稳定，便于 DB 接入 |
+
+### Mistake Record（产品最小字段）
+
+| 字段 | 必须 | 说明 |
+|------|:----:|------|
+| `mistake_id` | 是 | 主键 |
+| `question_id` | 是 | 关联 Question |
+| `user_id` | 是 | 多用户隔离 |
+| `question_text` | 是 | 题干快照 |
+| `options` | 是 | 选项快照 |
+| `user_answer` | 是 | 用户答案 |
+| `correct_answer` | 是 | 当次 **判题基准**（= `adjudication_answer`；通常为 Coach 判断） |
+| `error_type` | 是 | 见 §3.4 产品枚举 |
+| `error_reason` | 是 | 错因说明 |
+| `knowledge_point` | 是 | 知识点标签（数组或主标签） |
+| `exam_domain` | 推荐 | ECO：`people` / `process` / `business_environment` |
+| `review_status` | 是 | 默认 `new` |
+| `created_at` | 是 | ISO 8601 |
+
+**历史只读别名**：`mistake_type`、`mistake_reason`、`eco_domain` — **禁止新写入**；读取时回退至 canonical（见 `schema_overview.md` §1.1）。
 
 ### 与其他实体的关系
 
 ```
 User (1) ──< (N) Mistake
-Question (1) ──< (N) Mistake   # MVP：Mistake.question_id 必填，关联 Question
+Question (1) ──< (N) Mistake
+User (1) ──< (N) QuestionHistory   # 见 question_schema.md
+User (1) ──< (N) Bookmark          # 见 question_schema.md；≠ Mistake
 ```
 
-- **Mistake** 关注「这次做错 + 怎么复习」
-- **Question**（见 `question_schema.md`）存储题目正文；MVP 保存错题前须先创建/匹配 `Question`
-- 入库时：`question_analysis` 工作流的 `Data Handoff` 映射为本 Schema 字段；`review_status` 从工作流入库状态映射为 `new`（见 §4）
+- **Mistake** = 答错 + 错因 + 复习状态  
+- **Bookmark** ≠ Mistake（答对也可收藏）  
+- **QuestionHistory** = 每次作答轨迹（对/错均记）
 
 ### 设计原则
 
@@ -75,7 +106,7 @@ Question (1) ──< (N) Mistake   # MVP：Mistake.question_id 必填，关联 Q
 |----------|----------|----------|------|
 | `project_type` | ENUM / VARCHAR(32) | 否 | 项目类型：`predictive` / `agile` / `hybrid` / `unknown` |
 | `project_phase` | ENUM / VARCHAR(32) | 否 | 项目阶段：`initiating` / `planning` / `executing` / `monitoring_controlling` / `closing` / `unknown` |
-| `eco_domain` | ENUM / VARCHAR(32) | 否 | 考试大纲 ECO 领域：`people` / `process` / `business_environment` / `unknown` |
+| `exam_domain` | ENUM / VARCHAR(32) | 否 | ECO 领域（**读兼容** `eco_domain`） |
 | `knowledge_points` | JSON / TEXT[] | 否 | 具体知识点标签列表（复数，关系型/API 常用），如 `["冲突管理","合作/解决问题"]` |
 | `knowledge_point` | JSON / TEXT[] | 否 | **与 `knowledge_points` 同义**，Mistake Coach / `memory/mistake_memory.md` / **Review Coach** 聚合用；实现层二选一写入，读取时合并 |
 | `process` | VARCHAR(128) | 否 | PMBOK 过程名称或敏捷实践名（如 `实施整体变更控制`、`Sprint Planning`），比 `knowledge_point` 更贴近考纲过程粒度 |
@@ -104,11 +135,13 @@ Question (1) ──< (N) Mistake   # MVP：Mistake.question_id 必填，关联 Q
 
 | 规则 | 说明 |
 |------|------|
-| 入库最低要求 | `mistake_id`、`user_id`、`question_text`、`options`、`review_status`、`review_count`、`created_at`、`updated_at` |
-| 无用户答案 | `user_answer = null` 时，`error_type` 与 `wrong_type` 必须为 `null` |
+| **真实错题门槛（P0）** | 仅当 `user_answer` 与 **`adjudication_answer`** 均非 `null`，且规范化后 **不相等**，且通过 `decision_rules.md` §0.2 争议门禁时，才允许创建/更新 Mistake |
+| 入库最低要求 | `mistake_id`、`user_id`、`question_text`、`options`、`user_answer`、`correct_answer`、`error_type`、`error_reason`、`knowledge_point`、`review_status`、`review_count`、`created_at`、`updated_at` |
+| 无用户答案 | `user_answer = null` 时，**不得入库**；`error_type` 与 `wrong_type` 必须为 `null` |
+| 答对 | `user_answer === correct_answer` 时，**不得入库**（含用户要求「加入错题本」） |
 | 错因字段一致 | 若同时写入 `error_type` 与 `wrong_type`，须满足 §3.5 映射；`error_reason` 与 `wrong_reason` 内容一致 |
 | 知识点字段一致 | `knowledge_point` 与 `knowledge_points` 内容一致（或仅写其一，读取端合并） |
-| Review Coach 聚合 | 确认错题统计以 `user_answer` ≠ `correct_answer` 且 `error_type` 非 `null` 为准（争议题 `answer_disputed` 除外，见 `memory/` 约定） |
+| Review Coach 聚合 | 仅以满足 **P0 真实错题** 的记录统计；`error_type` 非 `null` |
 | 重复题目 | 同一 `user_id` + 同一 `question_id`（或题干指纹相同）→ 更新已有 Mistake，递增 `review_count`，刷新 `updated_at`，不重复创建 |
 | 选项格式 | `options` 至少包含一个键值对；键名推荐 `A`–`D` 或 `1`–`4`，全库保持一致 |
 
@@ -124,28 +157,28 @@ Question (1) ──< (N) Mistake   # MVP：Mistake.question_id 必填，关联 Q
 | `exam_set` | `exam_set` |
 | `project_approach` | `project_type` |
 | `project_phase` | `project_phase` |
-| `eco_domain` | `eco_domain` |
+| `exam_domain` / `eco_domain`（别名） | `exam_domain` |
 | `knowledge_points` | `knowledge_points` / `knowledge_point`（同值） |
-| `mistake_type` | `error_type`（MVP）；并映射 `wrong_type`（§3.5） |
-| `mistake_reason` | `error_reason` / `wrong_reason`（同值） |
+| `error_type` / `mistake_type`（别名） | `error_type`（MVP）；并映射 `wrong_type`（§3.5） |
+| `error_reason` / `mistake_reason`（别名） | `error_reason` / `wrong_reason`（同值） |
 | `explanation` | `answer_explanation` |
 | `correct_answer_confidence` | `confidence_level`（推断置信度时） |
 | 工作流 `review_status` | 入库后映射为 Mistake `review_status`（见 §4.3） |
 
 ### 2.9 Review Coach 分析字段（MVP 摘要）
 
-Mistake Coach 写入、Review Coach（`workflows/review_retrospective.md`）读取时，以下字段构成**最小分析集**：
+Mistake Coach 写入、Review Coach 读取时，**真实错题**须包含以下字段（`memory/data/mistake_memory.json` 与 Schema 对齐）：
 
-| 字段 | Review Coach 用途 |
-|------|-------------------|
-| `user_answer` | 识别作答与对错 |
-| `correct_answer` | 与 `user_answer` 对比 |
-| `error_type` | 高频错误类型分析（§3.4 枚举） |
-| `error_reason` | 错因说明、模式摘要文案 |
-| `knowledge_point` | 高频错误知识领域排序（标签展开） |
-| `review_status` | 待复习清单、薄弱点优先级 |
+| 字段 | 类型 | 真实错题必填 | Review Coach 用途 |
+|------|------|:------------:|-------------------|
+| `user_answer` | string / array | **是** | 作答快照 |
+| `correct_answer` | string / array | **是** | 对错判定 |
+| `error_type` | enum §3.4 | **是** | 高频错误类型分析 |
+| `error_reason` | text | **是** | 错因说明、模式摘要 |
+| `knowledge_point` | string[] | **是** | 知识领域排序（与 `knowledge_points` 同值） |
+| `review_status` | enum §4 | **是** | 待复习清单、掌握度 |
 
-`memory/data/mistake_memory.json` 可使用 `mistake_type` / `mistake_reason` 别名；落库或 API 层应对齐上表。
+记忆层：**新入库仅写** `error_type`、`error_reason`、`exam_domain`。Review / Planner 读取时 `error_type ?? mistake_type`。
 
 ---
 
@@ -221,41 +254,48 @@ MVP 链路（Question Coach → Mistake Coach → **Review Coach**）以 **`erro
 | 条件 | `error_type` | `wrong_type` |
 |------|--------------|--------------|
 | 用户未提供 `user_answer` | `null` | `null` |
-| 用户答对且无疑义 | `null` | `null`（可入库待巩固，不标错因） |
+| 用户答对且无疑义 | `null` | `null`（**不写 Mistake**；写 History；收藏另走 Bookmark） |
 | 用户答错或自述做错 | 必选 §3.4 一项，`error_reason` 必填 | 按 §3.5 映射写入 |
 | 信息不足无法分类 | `null` 或暂不填 | 可为 `insufficient_information` |
 
-### 3.4 `error_type` 枚举（MVP — Review Coach 聚合）
+### 3.4 `error_type` 枚举（产品 — Review Coach 聚合）
 
-`error_type` 为 **Mistake Coach / Review Coach 首选**错因字段，主类型只能取以下之一：
+**Canonical 字段名：`error_type`**（**历史只读**：`mistake_type`）。主类型取以下之一：
 
 | 存储值 | 英文名称 | 中文说明 |
 |--------|----------|----------|
-| `knowledge_gap` | Knowledge Gap | 知识盲区 |
+| `knowledge_gap` | Knowledge Gap | 知识缺失 |
 | `concept_confusion` | Concept Confusion | 概念混淆 |
-| `scenario_judgment_error` | Scenario Judgment Error | 场景判断错误 |
-| `process_order_error` | Process Order Error | 流程顺序错误 |
-| `keyword_misread` | Keyword Misread | 关键词误读（题干 First/Best/NOT、英文术语等） |
-| `careless` | Careless | 粗心 |
+| `careless_error` | Careless Error | 粗心 |
+| `question_reading_error` | Question Reading Error | 题干理解错误 |
+| `trap_option_error` | Trap Option Error | 选项陷阱 |
 
-存储值使用 **snake_case**。Review Coach 的 `mistake_type_analysis.by_type` **直接按 `error_type` 分组**；`memory` 层若仍为 `mistake_type`，读取时视为 `error_type` 别名。
+存储值使用 **snake_case**。Review Coach 的 `error_type_analysis.by_type` **按 `error_type` 分组**（兼容读取 `mistake_type`）。
+
+**兼容映射**（旧六项 → 产品五项）：
+
+| 旧值 | 新产品值 |
+|------|----------|
+| `knowledge_gap` | `knowledge_gap` |
+| `concept_confusion` | `concept_confusion` |
+| `scenario_judgment_error` | `trap_option_error` |
+| `process_order_error` | `concept_confusion` |
+| `keyword_misread` | `question_reading_error` |
+| `careless` | `careless_error` |
 
 ### 3.5 `error_type` ↔ `wrong_type` 映射
 
-入库可同时写 `error_type`（MVP）与 `wrong_type`（扩展库表）。映射关系：
+关系型层可同时写 `error_type`（产品）与 `wrong_type`（扩展库表）；**禁止**新写 `mistake_type` 别名。
 
-| `error_type`（MVP） | `wrong_type`（扩展） |
-|---------------------|----------------------|
+| `error_type`（产品） | `wrong_type`（扩展） |
+|------------------------|----------------------|
 | `knowledge_gap` | `knowledge_gap` |
 | `concept_confusion` | `concept_confusion` |
-| `scenario_judgment_error` | `scenario_judgment_error` |
-| `process_order_error` | `process_sequence_error` |
-| `keyword_misread` | `terminology_problem` |
-| `careless` | `carelessness` |
+| `careless_error` | `carelessness` |
+| `question_reading_error` | `terminology_problem` |
+| `trap_option_error` | `scenario_judgment_error` |
 
-**读取规则**：Review Coach 统计时以 `error_type` 为准；若仅存在 `wrong_type`，按上表**反查**为 `error_type` 再聚合。`error_reason` 与 `wrong_reason` 始终视为同一字段。
-
----
+**读取规则**：Review Coach 以 `error_type` 为准（回退 `mistake_type`）；若仅有 `wrong_type`，按上表归一后再聚合。`error_reason` 与 `mistake_reason` / `wrong_reason` 视为同一字段。
 
 ## 4. Review Status
 
@@ -326,16 +366,16 @@ MVP 链路（Question Coach → Mistake Coach → **Review Coach**）以 **`erro
 
 ### 4.3 与工作流入库状态的映射
 
-`question_analysis` 工作流使用另一组**入库意图**状态（`explain_only` / `wrong` / `needs_review` / `bookmarked`）。写入 Mistake 表时建议映射如下：
+`question_analysis` 工作流使用入库意图状态（`explain_only` / `wrong` / `needs_review` / `bookmarked`）。**Mistake 表是否写入以 P0 真实错题为准**（`user_answer` ≠ `correct_answer`），与工作流意图关系如下：
 
-| 工作流 `review_status` | 是否创建 Mistake | 初始 `review_status` | 说明 |
-|------------------------|------------------|------------------------|------|
+| 工作流 `review_status` | 满足 P0 时创建 Mistake | 初始 `review_status` | 说明 |
+|------------------------|------------------------|------------------------|------|
 | `explain_only` | 否 | — | 不持久化 |
-| `wrong` | 是 | `new` | 标准错题 |
-| `needs_review` | 是 | `new` 或 `learning` | 做对但不确信，视为待巩固 |
-| `bookmarked` | 是 | `new` | 收藏题，可不以错因为入库条件 |
+| `wrong` | 是 | `new` | 标准错题（须 `error_type` + `error_reason`） |
+| `needs_review` | 否 | — | 做对不确信**不**入库；须答错才入库 |
+| `bookmarked` | 否 | — | 收藏**不**入库；写 Bookmark + History |
 
-工作流状态**不**长期存储在 Mistake 表；若需追溯入库原因，使用扩展字段 `ingestion_tag`（§5）。
+工作流意图（做对不确信、收藏等）**不**写入 Mistake；作答对错与争议写入 **QuestionHistory**（`result`、`answer_disputed`），收藏写入 **Bookmark**。
 
 ---
 
@@ -397,11 +437,9 @@ MVP 链路（Question Coach → Mistake Coach → **Review Coach**）以 **`erro
 
 | 预留 | 说明 |
 |------|------|
-| `ingestion_tag` | 入库来源：`wrong` / `needs_review` / `bookmarked` / `import` |
-| `image_refs` | 题目截图存储 URI 列表，服务 OCR 溯源 |
-| `ocr_metadata` | OCR 置信度、引擎版本 |
-| `duplicate_of_mistake_id` | 若合并重复记录，指向保留记录 |
 | `metadata` | 开放 JSON，承载尚未升维为列的实验性字段 |
+
+> **已废弃（勿写入 `mistake_memory.json`）**：`ingestion_tag`、`is_correct`、`answer_disputed` — 分别由 Bookmark、QuestionHistory `result`、QuestionHistory `answer_disputed` 承担。
 
 ---
 
@@ -431,7 +469,7 @@ MVP 链路（Question Coach → Mistake Coach → **Review Coach**）以 **`erro
   },
   "project_type": "predictive",
   "project_phase": "executing",
-  "eco_domain": "people",
+  "exam_domain": "people",
   "process": "管理团队",
   "error_type": "scenario_judgment_error",
   "error_reason": "用户选择了直接上报，跳过了与团队成员的协作沟通，违反 Collaborate before escalate 原则。",

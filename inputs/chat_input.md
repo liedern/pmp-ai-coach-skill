@@ -26,7 +26,7 @@
 | `plan` | Learning Plan Flow → `workflows/study_plan.md` |
 | `analyze_question` | 若含题目结构 → `question_analysis` |
 | `review_progress` | 读取 `memory/learning_progress`、`weak_points` |
-| `save_mistake` | 「加入错题本」→ question_analysis + mistake_memory |
+| `save_mistake` | 「加入错题本」→ `question_analysis`（**仅答错已自动入库**；答对则说明不入库） |
 | `process_material` | 「整理这份资料」→ material_processing |
 | `general` | skill.md 通用教练回复 |
 

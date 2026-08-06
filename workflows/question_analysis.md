@@ -242,7 +242,7 @@ Step 4: 去重检测（若有历史题库访问能力）
 | 条件 | 行为 |
 |------|------|
 | 用户**未提供**答案 | `error_type = null`；输出「用户错因：【待确认】未提供用户答案，无法判断错因」 |
-| 用户答案**正确** | `error_type = null`；可标注「掌握状态：已掌握 / 不确定」 |
+| 用户答案**正确**（对 **adjudication_answer**） | `error_type = null`；可标注「掌握状态：已掌握 / 不确定」 |
 | 用户答案**错误** | 给出主类型（写入 `error_type`）+ 判断依据（`error_reason`） |
 | 用户自述思路但未选选项 | 按自述思路判断，标注【推测】 |
 
@@ -258,6 +258,40 @@ Step 4: 去重检测（若有历史题库访问能力）
 
 ---
 
+## 5.5 Answer Evaluation（答案可信层 · v0.1.1）
+
+在 **§4 讲解完成** 之后、**§6 分流** 之前执行。Coach **不是题库答案搬运工具**；须独立给出考试逻辑判断。
+
+### 5.5.1 输入
+
+| 字段 | 来源 |
+|------|------|
+| `platform_answer` | Capture / 用户粘贴 / OCR 解析页标答（映射采集侧「标答」） |
+| `user_answer` | 用户作答 |
+| `coach_answer` | 本工作流 §3–§4 推理后的应选项 |
+| `coach_answer_reason` | 一句话决策链（写入 `explanation.correct_answer_reason` 或同等） |
+
+### 5.5.2 产出 `answer_evaluation`
+
+| 字段 | 说明 |
+|------|------|
+| `platform_answer` | 可 `null` |
+| `coach_answer` | 可 `null`（则 `answer_status=uncertain`） |
+| `coach_answer_reason` | `coach_answer` 非空时必填 |
+| `answer_confidence` | `high` / `medium` / `low`（针对 Coach） |
+| `answer_status` | `coach_only` / `aligned` / `disputed` / `uncertain` |
+| `answer_disputed` | `true` 当且仅当 `answer_status=disputed` |
+| `adjudication_answer` | 按 `decision_rules.md` §0.1 |
+| `ael_version` | `"0.1.1"` |
+
+### 5.5.3 错因与对错
+
+- **对错**：`user_answer` vs **`adjudication_answer`**（非单独 vs `platform_answer`）。  
+- **错因**（§5）：仅当相对 `adjudication_answer` 答错时填写 `error_type` / `error_reason`。  
+- **争议且用户 = Coach**：`error_type=null`；History `result=correct`，`answer_disputed=true`。
+
+---
+
 ## 6. Data Routing（三分流 · 自动）
 
 根据作答结果 **自动分流**，**禁止**询问「是否保存错题」。
@@ -267,10 +301,11 @@ Step 4: 去重检测（若有历史题库访问能力）
 | 场景 | History | Mistake | Bookmark | 用户提示 |
 |------|:-------:|:-------:|:--------:|----------|
 | 仅讲解、无作答 | 可选 | 否 | 否 | — |
-| 答对 | ✅ | 否 | 仅主动收藏 | — |
-| **答错** | ✅ History | **✅ Mistake 自动** | 仅主动收藏 | **「本题已自动加入错题库」** + `error_type` / `error_reason` / 知识点 / 复习建议 |
-
-流程：**答错 → History 记录 → 自动写入 Mistake**（无需用户确认）。
+| 答对（对 **adjudication**） | ✅ | 否 | 仅主动收藏 | — |
+| **答错**（对 **adjudication**） | ✅ | **✅ 自动**（`decision_rules` §0–§1） | 仅主动收藏 | 「本题已自动加入错题库」 |
+| **争议**：用户=Coach ≠ 平台 | ✅ `correct` + `answer_disputed` | **否** | — | 说明未按题库记错 |
+| **争议**：用户≠Coach（Coach 可信） | ✅ `wrong` | ✅ | — | 同答错 |
+| `uncertain` / 无 adjudication | ✅ `unknown` | 否 | — | 建议补信息或确认标答 |
 | 用户说「收藏这题」等 | 不变 | 不变 | ✅ | 「已加入收藏」 |
 | 与已有错题重复再次答错 | ✅ 新 History | 更新 Mistake | — | 「错题记录已更新」 |
 
@@ -282,7 +317,9 @@ Step 4: 去重检测（若有历史题库访问能力）
 
 ### 6.3 置信度说明
 
-正确答案为【推测】且置信度中/低时：仍可自动入库 Mistake，但在记录中标注 `confidence_level=low`，并在用户可见输出中说明「答案为推测，错题库已标记低置信」。
+- Coach 侧 `answer_confidence=low` 或 `answer_status=uncertain`：**不写 Mistake**（仅 History）。  
+- `answer_confidence` 为 medium/high 且相对 adjudication 答错：可入库；`low` 时 Mistake 标 `confidence_level=low` 并提示用户。  
+- 题库标答仅为【事实·来源】；讲解 §2 须区分 **Coach 判断** 与 **平台标答**（见 §7 可选「答案对照」）。
 
 **删除**：任何「回复保存错题再入库」的交互。
 
@@ -307,9 +344,17 @@ Step 4: 去重检测（若有历史题库访问能力）
 
 ## 2. 正确答案
 
-**[选项字母]** — [一句话结论]
+**[选项字母]** — [一句话结论]（**Coach 考试逻辑判断**）
 
 > 标注：【事实】用户提供 / 【推测】Agent 推断
+
+### 2b. 答案对照（仅当 `answer_disputed` 或 `platform_answer` ≠ `coach_answer`）
+
+| 来源 | 选项 | 说明 |
+|------|------|------|
+| 题库/App | … | 【事实】 |
+| Coach（考试逻辑） | … | 置信度：高/中/低 |
+| 本次判题基准 | … | `adjudication_answer` |
 
 ## 3. 项目类型与阶段
 
@@ -405,7 +450,7 @@ Step 4: 去重检测（若有历史题库访问能力）
 | `question_text` | string | 题干全文 | 【事实】原文 |
 | `options` | object | 选项键值对 | `{"A":"...","B":"...","C":"...","D":"..."}` |
 | `user_answer` | string \| null | 用户答案 | 单选 `"B"`；多选 `["A","C"]`；未提供 `null` |
-| `correct_answer` | string \| null | 正确答案 | 同上；不确定 `null` + `correct_answer_confidence` |
+| `correct_answer` | string \| null | **判题基准**（= `adjudication_answer`） | 与 `answer_evaluation.adjudication_answer` 一致 |
 | `source` | string \| null | 题目来源 | 未知 `null` |
 | `exam_set` | string \| null | 套卷名称或编号 | 未知 `null` |
 | `project_approach` | string | 项目类型 | `predictive` / `agile` / `hybrid` / `unknown` |
@@ -442,7 +487,8 @@ Step 4: 去重检测（若有历史题库访问能力）
 
 | 字段 | 说明 |
 |------|------|
-| `correct_answer_confidence` | `high` / `medium` / `low` |
+| `answer_evaluation` | **v0.1.1** 对象：`platform_answer`、`coach_answer`、`coach_answer_reason`、`answer_confidence`、`answer_status`、`answer_disputed`、`adjudication_answer`、`ael_version` |
+| `correct_answer_confidence` | 同 `answer_evaluation.answer_confidence`（兼容） |
 | `official_explanation` | 官方解析原文 |
 | `attempt_date` | 做题日期 ISO 8601 |
 | `question_intent` | `first` / `next` / `best` / `most_appropriate` / `should_do` / `implicit` |
@@ -494,6 +540,16 @@ Step 4: 去重检测（若有历史题库访问能力）
   "review_status": "wrong",
   "created_at": "2026-07-28T10:40:00+08:00",
   "correct_answer_confidence": "high",
+  "answer_evaluation": {
+    "platform_answer": "B",
+    "coach_answer": "B",
+    "coach_answer_reason": "冲突应首先通过面对面沟通与合作解决，而非直接升级",
+    "answer_confidence": "high",
+    "answer_status": "coach_only",
+    "answer_disputed": false,
+    "adjudication_answer": "B",
+    "ael_version": "0.1.1"
+  },
   "question_intent": "first",
   "pending_confirmations": ["source", "exam_set"]
 }
@@ -525,6 +581,10 @@ Step 4: 去重检测（若有历史题库访问能力）
          ▼
   ┌──────────────────────┐
   │ 5. Mistake Classify  │ 有用户答案才判错因
+  └──────┬───────────────┘
+         ▼
+  ┌──────────────────────┐
+  │ 5.5 Answer Evaluation│ platform vs coach → adjudication
   └──────┬───────────────┘
          ▼
   ┌──────────────────────┐

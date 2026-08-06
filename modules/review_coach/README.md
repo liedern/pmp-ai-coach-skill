@@ -40,6 +40,8 @@
 | `examples/sample_retrospective_output.json` | 示例输出 |
 | `workflows/review_retrospective.md` | 执行工作流 |
 
+**复盘读源（P0）**：错因仅 `mistake_memory.json`；`question_history.json` 用于趋势、争议、重复作答；**不读** `bookmark_memory.json` 做错误统计。
+
 ---
 
 ## 输入
@@ -95,7 +97,7 @@
 | 文件 | 读写 |
 |------|------|
 | `memory/data/learning_state.json` | 读 |
-| `memory/data/review_retrospective.json` | 读/写（最近一次复盘快照） |
+| `memory/data/review_retrospective.json` | **仅写**快照（`review_snapshot`）；复盘输入不读此文件 |
 | `memory/user_profile.md` | 读 |
 
 ### 协作模块

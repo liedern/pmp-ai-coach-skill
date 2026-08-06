@@ -39,7 +39,7 @@
 
 - 动词：`录入`、`记一道`、`刷题记录`、`练习 x/180`
 - 答案：`我选 A`、`选B`、`用户答案：C`
-- 标答：`正确 D`、`答案：B`、`官方解析`
+- 标答：`正确 D`、`答案：B`、`官方解析`（采集为 **`platform_answer`**；判题以 Analysis §5.5 `adjudication_answer` 为准）
 - 收藏：`收藏`、`已加入收藏`、`加入重点题`
 - 跳过持久化：`只要讲解`、`不要保存`
 
@@ -54,7 +54,8 @@
 | `question_text` | 题干 |
 | `options` | 选项对象 |
 | `user_answer` | 可 null |
-| `correct_answer` | 可 null |
+| `platform_answer` | 题库/App 标答（可 null）；兼容键 `correct_answer` |
+| `correct_answer` | 采集侧标答别名 → `platform_answer` |
 | `official_explanation` | 可 null |
 | `source` / `exam_set` | 可 null |
 | `ocr_text` | 截图时 |

@@ -2,9 +2,25 @@
 
 > **版本**：`mvp-1`  
 > **触发**：用户「复盘」  
-> **消费者**：用户阅读、Study Planner（P1）、`memory/data/review_retrospective.json`
+> **消费者**：用户阅读、Study Planner（P1，**仅当快照未过期**）、`memory/data/review_retrospective.json`（写后缓存）
 
 ---
+
+## 1.1 快照文件（`review_retrospective.json`）
+
+| 属性 | 说明 |
+|------|------|
+| 作用 | 缓存**上一次**成功复盘的可读结果，便于 Planner 融合、用户对比 |
+| 非作用 | **不是**复盘输入；新一次「复盘」必须从 `mistake_memory.json` 重算 |
+| `record_kind` | `review_snapshot` |
+| `snapshot_status` | `current`：与 `source_revisions` 一致；`stale`：源数据已更新，Planner 不得单独依赖本文件 |
+| `source_revisions` | 写入时复制的 `mistake_memory.updated_at` 等指纹 |
+
+### 1.2 复盘读源（P0）
+
+- **错因 / 错误分析**：仅 `mistake_memory.json`
+- **History**：答题趋势、争议题、重复作答（见 `aggregation_rules.md` §0、§1.1）
+- **Bookmark**：不参与错误统计；复盘输出中不出现收藏驱动的错因计数
 
 ## 1. 交接块格式
 
@@ -35,7 +51,7 @@
     "disputed_count": 1
   },
   "knowledge_domain_ranking": [],
-  "mistake_type_analysis": {},
+  "error_type_analysis": {},
   "weak_points_snapshot": [],
   "learning_suggestions": [],
   "next_training": {},
@@ -59,7 +75,7 @@
 
 见 `aggregation_rules.md` §2.4。
 
-### 3.3 `mistake_type_analysis`
+### 3.3 `error_type_analysis`
 
 ```json
 {
@@ -75,7 +91,7 @@
 
 与 `database/learning_schema.md` WeakPoint 字段子集对齐：
 
-`knowledge_domain`, `label`, `priority_score`, `error_trend`, `dominant_mistake_type`, `suggested_direction[]`, `source`（`weak_points.json` | `computed`）
+`knowledge_domain`, `label`, `priority_score`, `error_trend`, `dominant_error_type`, `suggested_direction[]`, `source`（`weak_points.json` | `computed`）
 
 ### 3.5 `learning_suggestions[]`
 
@@ -114,9 +130,11 @@
   "review_status": "new",
   "repeated_count": 1,
   "memory_rule": "string",
-  "ingestion_tag": "bookmarked"
+  "answer_disputed": false
 }
 ```
+
+`answer_disputed` 来自 `question_history.json`（同 `question_id` 最新条），非 Mistake 字段。
 
 ---
 

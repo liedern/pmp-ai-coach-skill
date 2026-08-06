@@ -29,12 +29,12 @@
   "correct_answer_confidence": "high",
   "explanation": { },
   "knowledge_points": [],
-  "eco_domain": "people",
+  "exam_domain": "people",
   "process": "管理团队",
   "terminology_explanations": [],
   "plain_language_summary": "",
-  "mistake_type": null,
-  "mistake_reason": null,
+  "error_type": null,
+  "error_reason": null,
   "review_status": "explain_only",
   "created_at": "2026-07-29T18:00:00+08:00",
   "pending_confirmations": []
@@ -81,28 +81,50 @@
 | `exam_signal` | string | 是 | 题干/选项中的信号 |
 | `ref` | string | 否 | 知识库路径 |
 
-### 3.4 `mistake_type`（MVP 枚举）
+### 3.4 `error_type` / `error_reason`
+
+产品五项（答错必填）。**新 DATA_HANDOFF 只写** `error_type`、`error_reason`。
+
+**读取兼容**（旧 handoff / 历史 JSON）：若仅有 `mistake_type` / `mistake_reason`，视为与 canonical 同义。
 
 ```
 knowledge_gap
 concept_confusion
-scenario_judgment_error
-process_order_error
-keyword_misread
-careless
+careless_error
+question_reading_error
+trap_option_error
 null   # 无用户答案或答对
 ```
 
-### 3.5 `review_status`
+### 3.5 `review_status` / `data_routing`
 
-| 值 | 含义 | Mistake Coach 是否处理 |
-|----|------|------------------------|
-| `explain_only` | 仅讲解 | 否 |
-| `wrong` | 做错 | 是（默认入库） |
-| `needs_review` | 做对但不确信 | 是（待巩固） |
-| `bookmarked` | 用户收藏 | 是 |
+| `review_status` | 含义 |
+|-----------------|------|
+| `explain_only` | 仅讲解、无作答 |
+| `wrong` | 答错 → **自动** Mistake |
+| `correct` | 答对 → History only（除非收藏） |
 
----
+| `data_routing` 字段 | 含义 |
+|---------------------|------|
+| `write_history` | 有作答则为 `true` |
+| `write_mistake` | 答错为 `true`（自动） |
+| `write_bookmark` | 用户主动收藏为 `true` |
+
+**禁止**：用 `bookmarked` 作为 Mistake 入库标签；收藏走 Bookmark Memory。
+
+### 3.6 用户可见归档提示（答错时必出）
+
+```markdown
+## 归档
+
+- **本题已自动加入错题库**
+- **错误类型**：{error_type}
+- **错误原因**：{error_reason}
+- **知识点**：{knowledge_points}
+- **后续复习建议**：{一句可执行建议}
+```
+
+**禁止**输出：「需要的话回复保存错题」。
 
 ## 4. 与 `question_analysis.md` 映射
 
@@ -112,7 +134,9 @@ null   # 无用户答案或答对
 | `options` | `question_recognition.options` |
 | `project_approach` | `question_recognition.project_approach` |
 | `project_phase` | `question_recognition.project_phase` |
-| `mistake_type` | `mistake_type`（MVP 六类） |
+| `exam_domain` | `exam_domain`（读兼容 `eco_domain`） |
+| `error_type` | 产品五项 |
+| `error_reason` | 错因说明 |
 | `explanation` | `explanation` |
 | `review_status` | `review_status` |
 | — | `terminology_explanations`（本契约新增） |
@@ -126,7 +150,9 @@ null   # 无用户答案或答对
 |------|------|
 | R1 | `module` 必须为 `"question_coach"` |
 | R2 | `options` 至少 2 个键 |
-| R3 | `user_answer` 为 null 时，`mistake_type` 必须为 null |
-| R4 | `mistake_type` 非 null 时，`mistake_reason` 必填 |
-| R5 | `review_status = explain_only` 时，下游默认不入库 |
+| R3 | `user_answer` 为 null 时，`error_type` 必须为 null |
+| R4 | `error_type` 非 null 时，`error_reason` 必填 |
+| R5 | `write_mistake=true` 时必须 `user_answer` ≠ `correct_answer` 且 `error_type` 非 null |
+| R8 | **禁止**在新 `QUESTION_OUTPUT` 中写入 `mistake_type`、`mistake_reason`、`eco_domain` |
 | R6 | 缺失值用 `null`，不用空字符串 |
+| R7 | 禁止要求用户确认「保存错题」；答错自动入库 |

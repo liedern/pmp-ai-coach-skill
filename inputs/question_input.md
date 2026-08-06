@@ -2,7 +2,7 @@
 
 > **用途**：定义用户以**纯文本**形式提交 PMP 题目时的输入格式、识别规则与路由。
 >
-> **下游**：`workflows/question_analysis.md`
+> **下游**：`workflows/question_capture.md` → `workflows/question_analysis.md`
 
 ---
 
@@ -37,10 +37,13 @@ input_type = question
 结构化提取（题干 / 选项 / 用户答案 / 正确答案）
       │
       ▼
+Question Capture Workflow（档位 L0–L3、question_id）
+      │
+      ▼
 Question Analysis Workflow
       │
-      ├─ 仅讲解 → 输出分析，不写 Memory
-      └─ 保存错题 → mistake_memory → [可选] database
+      ├─ 有作答 → question_history
+      └─ 答错 → 自动 mistake_memory（禁止询问是否保存）→ [可选] database
 ```
 
 ---

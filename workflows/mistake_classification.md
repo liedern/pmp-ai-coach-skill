@@ -11,7 +11,7 @@
 | 原则 | 说明 |
 |------|------|
 | 上游优先 | 以 `QUESTION_OUTPUT` 为事实来源，不重新推理答案 |
-| P0 真实错题 | `user_answer` ≠ `correct_answer` 才入库 |
+| P0 真实错题 | `user_answer` ≠ **`adjudication_answer`** 才入库（见 `decision_rules.md` §0–§1） |
 | 不编造 | 缺 `error_type` / `error_reason` 不入库 |
 | 幂等去重 | 同题更新，不重复创建 |
 | MVP 无库 | 写入 `memory/data/*.json`，不调用数据库 |
@@ -42,13 +42,15 @@
 
 ---
 
-## 2.5 Real Mistake Gate（P0）
+## 2.5 Real Mistake Gate（P0 + AEL）
 
-按 `modules/mistake_coach/decision_rules.md` **§0**：
+按 `modules/mistake_coach/decision_rules.md` **§0 Answer Validation** 与 **§1 P0**：
 
 ```
-normalize(user_answer) != normalize(correct_answer)
-  AND both non-null
+读取 answer_evaluation → adjudication_answer
+应用 §0.2 争议门禁
+normalize(user_answer) != normalize(adjudication_answer)
+  AND adjudication_answer non-null
         │
         ├─ false → should_save=false，输出原因，结束
         └─ true  → 继续 §3

@@ -33,7 +33,8 @@
 | 检查 | 预期 |
 |------|------|
 | 做完 1 道题（有作答） | `question_history.json` 出现 1 条 `history` |
-| 该题答错 | `mistake_memory.json` 出现 1 条 `mistakes` |
+| 该题答错 | `mistake_memory.json` 出现 1 条 `mistakes`（相对 **adjudication_answer**；v0.1.1） |
+| 题库标答与 Coach 不一致且你选的是 Coach 侧 | History `answer_disputed=true`，**通常无** Mistake |
 | 说「复盘」 | 可读 Mistake；可选生成 `review_retrospective.json` |
 | 说「收藏这题」 | `bookmark_memory.json` 增加 1 条（与对错无关） |
 

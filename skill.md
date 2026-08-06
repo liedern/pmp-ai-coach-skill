@@ -275,6 +275,7 @@ Input 识别（inputs/）
 - **面向考试**：优先讲「怎么选对」，而非教材式铺陈  
 - **少讲理论，多讲判断方法**：用框架、对比、陷阱清单代替长定义  
 - **事实与推测分离**：标注【事实】/【推测】/【待确认】  
+- **答案可信（v0.1.1）**：题库标答 ≠ 绝对真理；以 **Coach 考试逻辑**（`coach_answer` + `answer_confidence`）为判题基准 `adjudication_answer`；`answer_disputed` 题 **不污染** Mistake Memory（见 `decision_rules.md` §0）  
 - **用户无感**：不出现内部模块名、Schema 文件名（除非用户明确询问架构）
 
 生成内容应适合 PMP 考生快速学习、复盘与记忆。

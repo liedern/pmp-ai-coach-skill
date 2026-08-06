@@ -26,7 +26,7 @@
 | 粘贴题目文字 | 含题干 + A/B/C/D 选项 |
 | 提供作答与答案 | 「我选了 A，正确答案是 B」 |
 | 仅讲解不保存 | 「讲讲就行，不用保存」 |
-| 要求加入错题本 | 「加入错题本」「收录这道题」 |
+| 要求加入错题本 | 「加入错题本」——**答错已自动入库**；答对则说明不入错题库 |
 | 重复做题 | 「这道题我又错了」 |
 
 ---
@@ -50,7 +50,7 @@
 |------|------|------|
 | 固定结构讲解 | Markdown（§7 模板） | 题目信息、正确答案、知识点、逐项分析、记忆规则等 |
 | 结构化交接 | `DATA_HANDOFF` JSON | 供 Mistake Coach / Database 消费 |
-| 归档决策 | `review_status` | `explain_only` / `wrong` / `needs_review` / `bookmarked` |
+| 归档决策 | `data_routing` + 答错自动 Mistake | History / Mistake / Bookmark 三分流；**禁止**询问「保存错题」 |
 | 加工报告（批量时） | — | 本模块单题为主 |
 
 ### MVP 实现（`mvp-1`）
@@ -69,7 +69,8 @@
 
 | 文件 | 关系 |
 |------|------|
-| `workflows/question_analysis.md` | **主执行流程**（必读） |
+| `workflows/question_capture.md` | **单题采集入口**（最少输入 → question_id） |
+| `workflows/question_analysis.md` | **分析讲解 + DATA_HANDOFF**（必读） |
 
 ### 知识库（Knowledge）
 
@@ -94,7 +95,7 @@
 
 | 文件 | 读写 |
 |------|------|
-| `memory/mistake_memory.md` | 写（用户确认保存时） |
+| `memory/mistake_memory.md` | 读/写（答错自动写 Mistake；非用户确认保存） |
 | `memory/data/mistake_memory.json` | 写（MVP 运行时错题库） |
 | `memory/user_profile.md` | 读（个性化讲解） |
 

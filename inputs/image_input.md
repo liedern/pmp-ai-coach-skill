@@ -2,7 +2,7 @@
 
 > **用途**：定义题目截图、讲义拍照等图片输入的 OCR 与路由规则。
 >
-> **下游**：`question_analysis`（题目图）或 `material_processing`（资料图）
+> **下游**：`question_capture` → `question_analysis`（题目图）或 `material_processing`（资料图）
 
 ---
 
@@ -32,6 +32,9 @@ OCR 识别（未来扩展：ocr_metadata）
       │
       ▼
 题目结构化（题干 / 选项 / 置信度）
+      │
+      ▼
+Question Capture Workflow
       │
       ▼
 Question Analysis Workflow

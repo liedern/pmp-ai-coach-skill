@@ -8,7 +8,7 @@
 
 ## 1. 写入条件
 
-仅当 `decision_rules.md` **P0** `is_real_mistake = true` 时追加或更新 `mistakes[]`。
+仅当 `decision_rules.md` **§0–§1** `is_real_mistake = true` 且通过争议门禁时追加或更新 `mistakes[]`。
 
 对错判定、争议标记、收藏意图 **不得** 写入本文件（→ `question_history.json` / `bookmark_memory.json`）。
 
@@ -21,13 +21,13 @@
 | `mistake_id` | string | 主键 |
 | `question_id` | string | 题目指纹 |
 | `user_answer` | string | 用户答案 |
-| `correct_answer` | string | 正确答案 |
+| `correct_answer` | string | 当次 **adjudication_answer**（判题基准） |
 | `error_type` | string | §`decision_rules.md` 产品五项 |
 | `error_reason` | string | 错因说明 |
 | `knowledge_point` | string[] | 知识点标签 |
 | `review_status` | string | 默认 `new` |
 
-可选扩展：`exam_domain`、`repeated_count`、`last_wrong_at`（见 `mistake_schema.md`）。
+可选扩展：`exam_domain`、`repeated_count`、`last_wrong_at`、`confidence_level`、`adjudication_source`（`coach` | `platform` | `legacy`）（见 `mistake_schema.md`）。
 
 ### 2.1 禁止新写入（历史兼容只读）
 
@@ -66,4 +66,4 @@
 | 答对 | 不得出现 `user_answer === correct_answer` 的新增条目 |
 | 无错因 | 不得 `error_type: null` 入库（信息不足时暂不写 Mistake） |
 | 仅收藏 | 写 `bookmark_memory.json` + History `result=correct` |
-| 答案争议 | 写 History `answer_disputed` + `result`；Mistake 仅保留错因字段 |
+| 答案争议 | 写 History `answer_disputed` + `answer_evaluation`；**不**因平台 alone 污染 Mistake（`decision_rules` §0.2） |

@@ -1,6 +1,6 @@
 # PMP AI Coach Skill
 
-**版本**：v0.1.0  
+**版本**：v0.1.1  
 **类型**：可维护的 Agent Skill（文档 + 工作流 + 轻量 Memory），非传统应用仓库。
 
 PMP AI Coach 帮助考生用 **单题深度分析 → 自动错题库 → 复盘 → 学习计划** 形成长期备考闭环。用户只与一个「PMP AI Coach」对话；内部分模块由 `skill.md` 静默路由。
@@ -39,7 +39,7 @@ PMP AI Coach 帮助考生用 **单题深度分析 → 自动错题库 → 复盘
 
 ### 2. 错题沉淀（Mistake Coach）
 
-- P0：仅 `user_answer ≠ correct_answer` 入库  
+- P0：仅 `user_answer ≠ adjudication_answer` 入库（v0.1.1；题库标答为 `platform_answer`，争议不污染 Mistake）  
 - 写入 `error_type`、`error_reason`、`knowledge_point`、`review_status`  
 - 聚合 `weak_points.json`，追加 `learning_state.json`  
 
@@ -170,4 +170,4 @@ CHANGELOG.md             # 版本记录
 
 ## 版本与变更
 
-当前发布：**v0.1.0** — 见 [`CHANGELOG.md`](CHANGELOG.md)。
+当前发布：**v0.1.1** — 见 [`changelog.md`](changelog.md)。

@@ -63,4 +63,16 @@
 
 ## [Unreleased]
 
-（后续版本在此记录。）
+---
+
+## [0.1.1] — 2026-08-06
+
+### Answer Validation（最小升级）
+
+- **AEL**：`platform_answer` / `coach_answer` / `adjudication_answer` / `answer_confidence` / `answer_status` / `answer_disputed`（`answer_evaluation` 对象）  
+- **判题**：Mistake 与 History `result` 以 **`adjudication_answer`** 为准；`correct_answer` 在 handoff 中与 adjudication 同义  
+- **争议**：`answer_disputed=true` 且用户答案 = Coach（高/中置信）→ **不写 Mistake**；争议仅存 History，复盘不计错因 share  
+- **文档**：`decision_rules.md` §0、`question_analysis.md` §5.5、`question_capture.md`、`database/question_schema.md` 等  
+- **兼容**：无 `answer_evaluation` 的 v0.1.0 记录按 `legacy` 读取；无新 Memory 文件、无新模块  
+
+---

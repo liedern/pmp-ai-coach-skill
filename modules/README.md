@@ -22,7 +22,7 @@
 
 | 模块 | 路径 | 核心职责 | 主工作流 | 主数据实体 |
 |------|------|----------|----------|------------|
-| **Question Coach** | `modules/question_coach/` | 单题识别、PMP 推理、讲解、归档决策 | `workflows/question_analysis.md` | `Question`, `Mistake`（写入） |
+| **Question Coach** | `modules/question_coach/` | 单题识别、PMP 推理、讲解、归档决策 | `workflows/question_capture.md` → `question_analysis.md` | `Question`, `Mistake`（写入） |
 | **Mistake Coach** | `modules/mistake_coach/` | 错题沉淀、错因归类、薄弱点聚合 | `workflows/mistake_classification.md` | `Mistake`, `WeakPoint` |
 | **Review Coach** | `modules/review_coach/` | **复盘** + 复习执行（P1） | `workflows/review_retrospective.md`（复盘）；`study_plan.md`（复习） | `ReviewSession`, Memory 读 |
 | **Study Planner** | `modules/study_planner/` | **规划**学习：排期、今日任务、进度闭环 | `workflows/study_plan.md` | `StudyPlan`, `LearningProgress` |
@@ -41,9 +41,9 @@
 | **触发信号** | 含完整题干 + 选项（文字/截图）；或用户要求「分析这道题」 | 概念提问、过程对比、ITTO、口诀；**无完整四选一题目** |
 | **核心问题** | 「这道题选什么？我为什么错？」 | 「这个概念是什么？考试怎么考？」 |
 | **推理框架** | PMP 五步 + `decision_tree` 六步决策链 | Teaching Mode 六段式（定义→考试意义→关键词→场景→陷阱→记忆法） |
-| **必须执行** | `workflows/question_analysis.md` 全流程 | `skill.md` §7；不跑题目七步 |
-| **错因分类** | 输出 `mistake_type`（8 类枚举） | 不涉及错因 |
-| **数据写入** | 可写 `Mistake`（用户确认保存时） | 可选写 `LearningProgress`；不写 `Mistake` |
+| **必须执行** | `question_capture` + `question_analysis` 全流程 | `skill.md` §7；不跑题目七步 |
+| **错因分类** | 输出 `error_type` + `error_reason`（产品五项） | 不涉及错因 |
+| **数据写入** | 有作答 → History；答错 → **自动** `Mistake` | 可选写 `LearningProgress`；不写 `Mistake` |
 | **典型用户话** | 「我选了 A，答案是 B」「帮我看截图」 | 「Validate Scope 是什么？」「Risk 和 Issue 区别？」 |
 
 **歧义消解规则**（Agent 内部）：

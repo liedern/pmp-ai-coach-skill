@@ -99,10 +99,10 @@ Agent 在模块入口将原始输入归一化为：
 | 1 | **题目识别** | §1 题目信息 | `question_recognition` |
 | 2 | **正确答案** | §2 正确答案 | `correct_answer` + `correct_answer_confidence` |
 | 3 | **每个选项分析** | §6 选项逐项分析 | `explanation.option_analysis` |
-| 4 | **PMP 知识点** | §4 考察知识点 | `knowledge_points` + `eco_domain` + `process` |
+| 4 | **PMP 知识点** | §4 考察知识点 | `knowledge_points` + `exam_domain` + `process` |
 | 5 | **专业术语解释** | 新增 §「专业术语」 | `terminology_explanations` |
 | 6 | **大白话理解** | 新增 §「大白话理解」 | `plain_language_summary` |
-| 7 | **错因判断**（答错时） | §7 用户错因 | `mistake_type` + `mistake_reason` |
+| 7 | **错因判断**（答错时） | §7 用户错因 | `error_type` + `error_reason` |
 
 ### 4.1 题目识别（`question_recognition`）
 
@@ -142,32 +142,25 @@ Agent 在模块入口将原始输入归一化为：
 
 > 两个人吵架了，项目经理不是第一时间找老板，而是先让俩人坐下来谈清楚。PMP 认为：能自己解决就先自己解决，谈不拢再往上报。
 
-### 4.4 错因分类（MVP 六类）
+### 4.4 错因分类（产品五项 · `error_type`）
 
-用户答错时，`mistake_type` **必须**从以下枚举选一（主类型）：
+用户答错时，`error_type` **必须**从以下枚举选一；说明写入 `error_reason`：
 
 | 存储值 | 中文 | 典型情形 |
 |--------|------|----------|
-| `knowledge_gap` | 知识盲区 | 不了解该过程/工具/实践 |
+| `knowledge_gap` | 知识缺失 | 不了解该过程/工具/实践 |
 | `concept_confusion` | 概念混淆 | 两个相近概念选错 |
-| `scenario_judgment_error` | 场景判断错误 | 误解情境、约束或相关方诉求 |
-| `process_order_error` | 流程顺序错误 | 步骤或先后顺序错误 |
-| `keyword_misread` | 关键词误读 | 看错 First/Best/NOT 或英文术语 |
-| `careless` | 粗心 | 手滑、漏看限定词 |
+| `careless_error` | 粗心 | 手滑、漏看限定词 |
+| `question_reading_error` | 题干理解错误 | 看错 First/Best/NOT 或英文术语 |
+| `trap_option_error` | 选项陷阱 | 落入干扰项套路 / 场景判断失误 |
 
-**与完整 Schema 映射**（写入 `mistake_schema` 时转换）：
+| 条件 | `error_type` / `error_reason` |
+|------|-------------------------------|
+| 无 `user_answer` | `null` / `null` |
+| 答对 | `null` / `null` |
+| 答错 | `error_type` 必选 + `error_reason` 必填 |
 
-| MVP 值 | `mistake_schema.wrong_type` |
-|--------|----------------------------|
-| `process_order_error` | `process_sequence_error` |
-| `keyword_misread` | `terminology_problem` |
-| `careless` | `carelessness` |
-
-| 条件 | `mistake_type` |
-|------|----------------|
-| 无 `user_answer` | `null` |
-| 答对 | `null` |
-| 答错 | 必选一项 + `mistake_reason` 必填 |
+答错后：**History 记录 → 自动写入 Mistake**；**禁止**询问「是否保存错题」。
 
 ---
 
@@ -190,18 +183,28 @@ Agent 在模块入口将原始输入归一化为：
 | `knowledge_points` | string[] | PMP 知识点标签 |
 | `terminology_explanations` | array | §4.2 |
 | `plain_language_summary` | string | §4.3 |
-| `mistake_type` | string \| null | §4.4 |
-| `mistake_reason` | string \| null | 错因自然语言说明 |
-| `review_status` | string | `explain_only` / `wrong` / `needs_review` / `bookmarked` |
+| `error_type` | string \| null | §4.4 产品五项 |
+| `error_reason` | string \| null | 错因说明 |
+| `data_routing` | object | `write_history` / `write_mistake` / `write_bookmark` |
+| `review_status` | string | `wrong` / `correct` / `explain_only` |
 | `created_at` | string | ISO 8601 |
 
-### 5.2 下游交接
+### 5.2 下游分流（三分流）
 
-`QUESTION_OUTPUT` 作为 **Mistake Coach 唯一首选输入**。Mistake Coach 读取后：
+`QUESTION_OUTPUT` 完成后按规则分流（**禁止**再询问「是否保存错题」）：
 
-1. 判断是否入库（见 `modules/mistake_coach/decision_rules.md`）
-2. 生成 `Mistake` 记录（对齐 `database/mistake_schema.md`）
-3. 触发 Memory 更新（见 `memory/README.md`）
+| 条件 | 动作 |
+|------|------|
+| 存在 `user_answer` | 写 **Question History** |
+| `user_answer` ≠ `correct_answer`（均非空） | **自动**进入 Mistake Coach → Mistake Memory；用户可见：「本题已自动加入错题库」 |
+| 用户主动「收藏这题」等 | 写 **Bookmark Memory** |
+| 仅讲解、无作答 | History 可选跳过；不写 Mistake |
+
+Mistake Coach 读取后：
+
+1. P0 校验真实错题并入库（`decision_rules.md`）
+2. 生成 Mistake Record（`mistake_schema.md`）
+3. 更新 `memory/data/mistake_memory.json` + `weak_points.json`
 
 ---
 
@@ -231,7 +234,7 @@ Agent 在模块入口将原始输入归一化为：
 |------|------|
 | 不编造 | 无用户答案不判错因；无官方解析不冒充 |
 | 事实分离 | 【事实】/【推测】/【待确认】 |
-| 不直接写 Memory | 入库由 Mistake Coach 决策并写入 `memory/data/` |
+| 不直接写 Memory | History / Mistake / Bookmark 按 `data_routing` 分流写入；答错自动 Mistake，**禁止**询问保存 |
 | 不暴露模块名 | 对用户始终以「PMP AI Coach」口吻输出 |
 
 ---
